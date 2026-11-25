@@ -83,6 +83,7 @@ pub struct RingAudio {
 
 pub struct SharedState {
     pub running: AtomicBool,
+    pub is_paused: AtomicBool,
     pub pause_clock: Mutex<(Option<i64>, i64, i64)>,
     pub mic_continuous: AtomicBool,
     pub target_window: AtomicIsize,
@@ -187,20 +188,25 @@ impl SharedState {
     pub fn pause_at(&self, pause: bool, now: i64) {
         let mut clock = self.pause_clock.lock().unwrap_or_else(|e| e.into_inner());
         match (pause, clock.0) {
-            (true, None) => clock.0 = Some(now),
+            (true, None) => {
+                clock.0 = Some(now);
+                self.is_paused.store(true, Ordering::Release);
+            }
             (false, Some(start)) => {
                 if !self.mic_continuous.load(Ordering::Acquire) {
                     clock.1 += (now - start).max(0);
                 }
                 clock.0 = None;
                 clock.2 = now;
+                self.is_paused.store(false, Ordering::Release);
             }
-            _ => {}
+            _ => self.is_paused.store(clock.0.is_some(), Ordering::Release),
         }
     }
     pub fn new() -> Arc<Self> {
         Arc::new(SharedState {
             running: AtomicBool::new(false),
+            is_paused: AtomicBool::new(false),
             pause_clock: Mutex::new((None, 0, 0)),
             mic_continuous: AtomicBool::new(false),
             target_window: AtomicIsize::new(0),
@@ -413,6 +419,7 @@ impl SharedState {
         self.res_h.store(res_h, Ordering::Relaxed);
         self.start_qpc.store(start_qpc, Ordering::Relaxed);
         *self.pause_clock.lock().unwrap_or_else(|e| e.into_inner()) = (None, 0, start_qpc);
+        self.is_paused.store(false, Ordering::Release);
         self.end_time.store(0, Ordering::Relaxed);
         self.frames_encoded.store(0, Ordering::Relaxed);
         self.frames_dropped.store(0, Ordering::Relaxed);
@@ -737,6 +744,10 @@ fn gpu_loop(
     let mut fails = 0;
     let mut clock = CfrClock::new(cfg.fps.max(1) as i64);
     while shared.running.load(Ordering::Acquire) {
+        if shared.is_paused.load(Ordering::Acquire) {
+            std::thread::sleep(Duration::from_millis(50));
+            continue;
+        }
         let generation = shared.gpu_gen.load(Ordering::Acquire);
         let sequence = shared.gpu_frames.load(Ordering::Acquire);
         if generation != seen_gen {
@@ -791,10 +802,14 @@ fn gpu_loop(
             continue;
         }
 
-        let wait_ms = match (clock.next_due_pts(), shared.capture_time(qpc100ns())) {
-            (Some(due), Some(now)) => ((due - now) / 10_000).clamp(1, 8) as u64,
-            (Some(_), None) => 16,
-            (None, _) => 4,
+        let wait_ms = if shared.is_paused.load(Ordering::Acquire) {
+            50
+        } else {
+            match (clock.next_due_pts(), shared.capture_time(qpc100ns())) {
+                (Some(due), Some(now)) => ((due - now) / 10_000).clamp(1, 8) as u64,
+                (Some(_), None) => 35,
+                (None, _) => 16,
+            }
         };
         if clock.next_due_pts().is_none() {
             let queue = shared.raw.lock().unwrap_or_else(|e| e.into_inner());
@@ -822,9 +837,13 @@ fn cpu_loop(shared: &Arc<SharedState>, enc: &mut encoder::VideoEncoder) {
     let fps = shared.fps.load(Ordering::Relaxed).max(1) as i64;
     let mut clock = CfrClock::new(fps);
     while shared.running.load(Ordering::Acquire) {
+        if shared.is_paused.load(Ordering::Acquire) {
+            std::thread::sleep(Duration::from_millis(50));
+            continue;
+        }
         let wait_ms = match (clock.next_due_pts(), shared.capture_time(qpc100ns())) {
             (Some(due), Some(now)) => ((due - now).max(0) / 10_000).clamp(1, 8) as u64,
-            (Some(_), None) => 16,
+            (Some(_), None) => 35,
             (None, _) => 40,
         };
         let new_frame = {

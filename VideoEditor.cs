@@ -65,107 +65,37 @@ public static class VideoEditor
         string tempPath = Path.Combine(
             Path.GetTempPath(),
             $"ir_export_{Guid.NewGuid():N}.mp4");
+        string? tempSourceCopy = null;
 
         try
         {
-            StorageFile srcFile = await StorageFile.GetFileFromPathAsync(request.SourcePath).AsTask(ct);
-            MediaClip probeClip = await MediaClip.CreateFromFileAsync(srcFile).AsTask(ct);
-            VideoEncodingProperties srcProps = probeClip.GetVideoEncodingProperties();
-
-            int srcW = (int)srcProps.Width;
-            int srcH = (int)srcProps.Height;
-            if (srcW <= 0 || srcH <= 0)
-                throw new InvalidOperationException("could not read source video dimensions.");
-
-            double totalSec = probeClip.OriginalDuration.TotalSeconds;
-            if (totalSec <= 0.1)
-                throw new InvalidOperationException("video clip is too short to edit.");
-
-            double startSec = Math.Clamp(request.TrimStartSeconds, 0.0, Math.Max(0.0, totalSec - 0.15));
-            double endSec = Math.Clamp(request.TrimEndSeconds, startSec + 0.15, totalSec);
-
-            int outW = SnapEven(srcW, MinCropPixels, srcW);
-            int outH = SnapEven(srcH, MinCropPixels, srcH);
-
-            var transcoder = new MediaTranscoder
+            string sourcePathToUse = request.SourcePath;
+            try
             {
-                HardwareAccelerationEnabled = true,
-                AlwaysReencode = true,
-                VideoProcessingAlgorithm = MediaVideoProcessingAlgorithm.Default,
-                TrimStartTime = TimeSpan.FromSeconds(startSec),
-                TrimStopTime = TimeSpan.FromSeconds(endSec),
-            };
-
-            if (request.Crop is { } rawCrop)
+                await ExportWithOptionsAsync(sourcePathToUse, tempPath, request, useHardware: true, setGopProperty: true, progress, ct);
+            }
+            catch (OperationCanceledException)
             {
-                int cw = SnapEven(rawCrop.Width, MinCropPixels, outW);
-                int ch = SnapEven(rawCrop.Height, MinCropPixels, outH);
-                int cx = Math.Clamp(SnapEvenFloor(rawCrop.X), 0, Math.Max(0, outW - cw));
-                int cy = Math.Clamp(SnapEvenFloor(rawCrop.Y), 0, Math.Max(0, outH - ch));
-
-                if (cx > 0 || cy > 0 || cw < outW || ch < outH)
+                throw;
+            }
+            catch (Exception firstEx)
+            {
+                // Retry with a temp copy if the live player / shell holds an incompatible share lock.
+                if (IsSharingOrLockError(firstEx))
                 {
-                    var fx = new VideoTransformEffectDefinition
+                    tempSourceCopy = Path.Combine(Path.GetTempPath(), $"ir_src_{Guid.NewGuid():N}.mp4");
+                    using (var inFs = new FileStream(request.SourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                    using (var outFs = new FileStream(tempSourceCopy, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
-                        CropRectangle = new Rect(cx, cy, cw, ch),
-                        OutputSize = new Size(cw, ch),
-                        ProcessingAlgorithm = MediaVideoProcessingAlgorithm.Default,
-                    };
-                    transcoder.AddVideoEffect(fx.ActivatableClassId, true, fx.Properties);
-                    outW = cw;
-                    outH = ch;
+                        await inFs.CopyToAsync(outFs, 131072, ct);
+                    }
+                    sourcePathToUse = tempSourceCopy;
                 }
+
+                try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+                Logger.Warn($"hardware export pass failed ({firstEx.Message}); retrying with software transcode.");
+                await ExportWithOptionsAsync(sourcePathToUse, tempPath, request, useHardware: false, setGopProperty: false, progress, ct);
             }
-
-            MediaEncodingProfile profile = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.HD1080p);
-            profile.Video.Width = (uint)outW;
-            profile.Video.Height = (uint)outH;
-            profile.Video.PixelAspectRatio.Numerator = 1;
-            profile.Video.PixelAspectRatio.Denominator = 1;
-
-            if (probeClip.EmbeddedAudioTracks.Count == 0)
-            {
-                profile.Audio = null;
-            }
-            else
-            {
-                AudioEncodingProperties srcAudio = probeClip.EmbeddedAudioTracks[0].GetAudioEncodingProperties();
-                uint sr = srcAudio.SampleRate > 0 ? srcAudio.SampleRate : 48_000u;
-                uint ch = srcAudio.ChannelCount > 0 ? Math.Clamp(srcAudio.ChannelCount, 1u, 2u) : 2u;
-                uint br = srcAudio.Bitrate > 0 ? Math.Clamp(srcAudio.Bitrate, 96_000u, 320_000u) : 192_000u;
-                profile.Audio = AudioEncodingProperties.CreateAac(sr, ch, br);
-            }
-
-            if (srcProps.FrameRate.Numerator > 0 && srcProps.FrameRate.Denominator > 0)
-            {
-                profile.Video.FrameRate.Numerator = srcProps.FrameRate.Numerator;
-                profile.Video.FrameRate.Denominator = srcProps.FrameRate.Denominator;
-            }
-
-            double fpsVal = (profile.Video.FrameRate.Numerator > 0 && profile.Video.FrameRate.Denominator > 0)
-                ? (double)profile.Video.FrameRate.Numerator / profile.Video.FrameRate.Denominator
-                : 60.0;
-            uint gopFrames = (uint)Math.Clamp((int)Math.Round(fpsVal * 0.5), 15, 120);
-            // CODECAPI_AVEncMPVGOPSize — keep keyframes every ~0.5s for instant timeline scrubbing
-            profile.Video.Properties[new Guid("95f31b26-95a4-41aa-9303-246a7fc6eef1")] = gopFrames;
-
-            double areaRatio = Math.Clamp((double)(outW * outH) / (srcW * srcH), 0.05, 1.0);
-            uint baseBitrate = srcProps.Bitrate > 0 ? srcProps.Bitrate : 18_000_000u;
-            profile.Video.Bitrate = (uint)Math.Clamp(
-                Math.Round(baseBitrate * Math.Sqrt(areaRatio)),
-                2_500_000,
-                50_000_000);
-
-            using (FileStream fs = File.Create(tempPath)) { }
-            StorageFile tempFile = await StorageFile.GetFileFromPathAsync(tempPath).AsTask(ct);
-
-            PrepareTranscodeResult prepared = await transcoder.PrepareFileTranscodeAsync(srcFile, tempFile, profile).AsTask(ct);
-            if (!prepared.CanTranscode)
-                throw new InvalidOperationException($"export unsupported ({prepared.FailureReason}).");
-
-            var transcodeOp = prepared.TranscodeAsync();
-            transcodeOp.Progress = (_, pct) => progress?.Report(Math.Clamp(pct, 0.0, 96.0));
-            await transcodeOp.AsTask(ct);
 
             TryOptimizeFastStart(tempPath);
             File.Move(tempPath, request.OutputPath, overwrite: false);
@@ -176,6 +106,140 @@ public static class VideoEditor
             try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
             throw;
         }
+        finally
+        {
+            if (tempSourceCopy != null)
+            {
+                try { if (File.Exists(tempSourceCopy)) File.Delete(tempSourceCopy); } catch { }
+            }
+        }
+    }
+
+    private static bool IsSharingOrLockError(Exception ex)
+    {
+        for (Exception? cur = ex; cur != null; cur = cur.InnerException)
+        {
+            int hr = cur.HResult;
+            if (cur is IOException || cur is UnauthorizedAccessException ||
+                hr == unchecked((int)0x80070020) || hr == unchecked((int)0x80070021) || hr == unchecked((int)0x80070005))
+                return true;
+        }
+        return false;
+    }
+
+    private static async Task ExportWithOptionsAsync(
+        string sourcePath,
+        string tempPath,
+        VideoExportRequest request,
+        bool useHardware,
+        bool setGopProperty,
+        IProgress<double>? progress,
+        CancellationToken ct)
+    {
+        StorageFile srcFile = await StorageFile.GetFileFromPathAsync(sourcePath).AsTask(ct);
+        MediaClip probeClip = await MediaClip.CreateFromFileAsync(srcFile).AsTask(ct);
+        VideoEncodingProperties srcProps = probeClip.GetVideoEncodingProperties();
+
+        int srcW = (int)srcProps.Width;
+        int srcH = (int)srcProps.Height;
+        if (srcW <= 0 || srcH <= 0)
+            throw new InvalidOperationException("could not read source video dimensions.");
+
+        double totalSec = probeClip.OriginalDuration.TotalSeconds;
+        if (totalSec <= 0.1)
+            throw new InvalidOperationException("video clip is too short to edit.");
+
+        double startSec = Math.Clamp(request.TrimStartSeconds, 0.0, Math.Max(0.0, totalSec - 0.15));
+        double endSec = Math.Clamp(request.TrimEndSeconds, startSec + 0.15, totalSec);
+
+        int outW = SnapEven(srcW, MinCropPixels, srcW);
+        int outH = SnapEven(srcH, MinCropPixels, srcH);
+
+        var transcoder = new MediaTranscoder
+        {
+            HardwareAccelerationEnabled = useHardware,
+            AlwaysReencode = true,
+            VideoProcessingAlgorithm = MediaVideoProcessingAlgorithm.Default,
+            TrimStartTime = TimeSpan.FromSeconds(startSec),
+            TrimStopTime = TimeSpan.FromSeconds(endSec),
+        };
+
+        if (request.Crop is { } rawCrop)
+        {
+            int cw = SnapEven(rawCrop.Width, MinCropPixels, outW);
+            int ch = SnapEven(rawCrop.Height, MinCropPixels, outH);
+            int cx = Math.Clamp(SnapEvenFloor(rawCrop.X), 0, Math.Max(0, outW - cw));
+            int cy = Math.Clamp(SnapEvenFloor(rawCrop.Y), 0, Math.Max(0, outH - ch));
+
+            if (cx > 0 || cy > 0 || cw < outW || ch < outH)
+            {
+                var fx = new VideoTransformEffectDefinition
+                {
+                    CropRectangle = new Rect(cx, cy, cw, ch),
+                    OutputSize = new Size(cw, ch),
+                    ProcessingAlgorithm = MediaVideoProcessingAlgorithm.Default,
+                };
+                transcoder.AddVideoEffect(fx.ActivatableClassId, true, fx.Properties);
+                outW = cw;
+                outH = ch;
+            }
+        }
+
+        MediaEncodingProfile profile = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.HD1080p);
+        profile.Video.Width = (uint)outW;
+        profile.Video.Height = (uint)outH;
+        profile.Video.PixelAspectRatio.Numerator = 1;
+        profile.Video.PixelAspectRatio.Denominator = 1;
+
+        if (probeClip.EmbeddedAudioTracks.Count == 0)
+        {
+            profile.Audio = null;
+        }
+        else
+        {
+            AudioEncodingProperties srcAudio = probeClip.EmbeddedAudioTracks[0].GetAudioEncodingProperties();
+            uint sr = srcAudio.SampleRate > 0 ? srcAudio.SampleRate : 48_000u;
+            uint ch = srcAudio.ChannelCount > 0 ? Math.Clamp(srcAudio.ChannelCount, 1u, 2u) : 2u;
+            uint br = srcAudio.Bitrate > 0 ? Math.Clamp(srcAudio.Bitrate, 96_000u, 320_000u) : 192_000u;
+            profile.Audio = AudioEncodingProperties.CreateAac(sr, ch, br);
+        }
+
+        double fpsVal = 60.0;
+        if (srcProps.FrameRate.Numerator > 0 && srcProps.FrameRate.Denominator > 0)
+        {
+            double rawFps = (double)srcProps.FrameRate.Numerator / srcProps.FrameRate.Denominator;
+            if (double.IsFinite(rawFps) && rawFps >= 1.0 && rawFps <= 240.0)
+            {
+                profile.Video.FrameRate.Numerator = srcProps.FrameRate.Numerator;
+                profile.Video.FrameRate.Denominator = srcProps.FrameRate.Denominator;
+                fpsVal = rawFps;
+            }
+        }
+
+        if (setGopProperty)
+        {
+            uint gopFrames = (uint)Math.Clamp((int)Math.Round(fpsVal * 0.5), 15, 120);
+            // CODECAPI_AVEncMPVGOPSize — keep keyframes every ~0.5s for instant timeline scrubbing
+            profile.Video.Properties[new Guid("95f31b26-95a4-41aa-9303-246a7fc6eef1")] = gopFrames;
+        }
+
+        double areaRatio = Math.Clamp((double)(outW * outH) / (srcW * srcH), 0.05, 1.0);
+        uint baseBitrate = srcProps.Bitrate > 0 ? srcProps.Bitrate : 18_000_000u;
+        profile.Video.Bitrate = (uint)Math.Clamp(
+            Math.Round(baseBitrate * Math.Sqrt(areaRatio)),
+            2_500_000,
+            50_000_000);
+
+        using (FileStream fs = File.Create(tempPath)) { }
+        StorageFile tempFile = await StorageFile.GetFileFromPathAsync(tempPath).AsTask(ct);
+
+        PrepareTranscodeResult prepared = await transcoder.PrepareFileTranscodeAsync(srcFile, tempFile, profile).AsTask(ct);
+        if (!prepared.CanTranscode)
+            throw new InvalidOperationException($"export unsupported ({prepared.FailureReason}).");
+
+        var transcodeOp = prepared.TranscodeAsync();
+        transcodeOp.Progress = (_, pct) => progress?.Report(Math.Clamp(pct, 0.0, 96.0));
+        await transcodeOp.AsTask(ct);
     }
 
     private static int SnapEven(int value, int min, int max)

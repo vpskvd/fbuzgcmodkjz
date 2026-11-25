@@ -143,6 +143,10 @@ fn run(
                 qpc100ns() - shared.start_qpc.load(Ordering::Acquire),
                 Ordering::Release,
             );
+            if shared.is_paused.load(Ordering::Acquire) {
+                std::thread::sleep(Duration::from_millis(35));
+                continue;
+            }
             let mut info = DXGI_OUTDUPL_FRAME_INFO::default();
             let mut resource = None;
             match unsafe { dup.AcquireNextFrame(10, &mut info, &mut resource) } {

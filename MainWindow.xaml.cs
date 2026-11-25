@@ -207,14 +207,6 @@ public partial class MainWindow : Window
                 _homeEntrancePlayed = true;
                 PlayHomeEntranceAnimation();
             }
-            var warmTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
-            warmTimer.Tick += (_, _) =>
-            {
-                warmTimer.Stop();
-                try { _webEnvTask ??= CreateWebViewEnvironmentAsync(); }
-                catch { }
-            };
-            warmTimer.Start();
         };
 
         RefreshMicrophonesInBackground();
@@ -264,25 +256,29 @@ public partial class MainWindow : Window
         _bufferHealthTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _bufferHealthTimer.Tick += (_, _) =>
         {
+            if (_isHidden) return;
             _engine.TrackForegroundGame();
             CheckBufferHealth();
             UpdateBufferBadge();
         };
-        _bufferHealthTimer.Start();
+        if (!_startMinimized) _bufferHealthTimer.Start();
 
         _statsTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
-        _statsTimer.Tick += (_, _) => UpdateSystemStats();
-        _statsTimer.Start();
-        UpdateSystemStats();
-        _ = Task.Delay(300).ContinueWith(_ => _dq.TryEnqueue(UpdateSystemStats));
+        _statsTimer.Tick += (_, _) => { if (!_isHidden) UpdateSystemStats(); };
+        if (!_startMinimized)
+        {
+            _statsTimer.Start();
+            UpdateSystemStats();
+            _ = Task.Delay(300).ContinueWith(_ => _dq.TryEnqueue(UpdateSystemStats));
+        }
 
         _micRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
-        _micRefreshTimer.Tick += (_, _) => RefreshMicrophonesInBackground();
-        _micRefreshTimer.Start();
+        _micRefreshTimer.Tick += (_, _) => { if (!_isHidden) RefreshMicrophonesInBackground(); };
+        if (!_startMinimized) _micRefreshTimer.Start();
 
         _micMeterTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(220) };
-        _micMeterTimer.Tick += (_, _) => UpdateMicLiveStatus();
-        _micMeterTimer.Start();
+        _micMeterTimer.Tick += (_, _) => { if (!_isHidden && _isSettingsActive) UpdateMicLiveStatus(); };
+        if (!_startMinimized) _micMeterTimer.Start();
 
         _deviceChangeDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         _deviceChangeDebounceTimer.Tick += (_, _) =>
@@ -811,6 +807,11 @@ public partial class MainWindow : Window
     private void CloseButton_Click()
     {
         if (_isVideoFullscreen) ExitVideoFullscreen();
+        if (!_isExportingVideo && _viewerItem != null)
+        {
+            StopViewerPlayback(destroy: true);
+            NavigateTo(HomePage, fadeOnly: true);
+        }
         try { _appWindow.Hide(); }
         catch
         {
@@ -818,6 +819,10 @@ public partial class MainWindow : Window
             ShowWindow(_hwnd, SwHide);
         }
         _isHidden = true;
+        _bufferHealthTimer?.Stop();
+        _statsTimer?.Stop();
+        _micMeterTimer?.Stop();
+        _micRefreshTimer?.Stop();
         StopDotPulse();
         StopApertureAnimation();
         _taskbarBadge?.SetTaskbarVisible(false);
@@ -1098,6 +1103,11 @@ public partial class MainWindow : Window
     private void ShowFromTray()
     {
         _isHidden = false;
+        _bufferHealthTimer?.Start();
+        _statsTimer?.Start();
+        _micRefreshTimer?.Start();
+        _micMeterTimer?.Start();
+        UpdateSystemStats();
         try { _appWindow.Show(); } catch { }
         ShowWindow(_hwnd, SwShow);
         if (_appWindow.Presenter is OverlappedPresenter presenter && presenter.State == OverlappedPresenterState.Minimized)
@@ -1883,7 +1893,7 @@ public partial class MainWindow : Window
     private void CloseViewer()
     {
         try { _exportCts?.Cancel(); } catch { }
-        StopViewerPlayback();
+        StopViewerPlayback(destroy: true);
         NavigateTo(HomePage, fadeOnly: true);
     }
 

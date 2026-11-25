@@ -668,6 +668,7 @@
                                                                 Click="CardOpenFolderButton_Click"
                                                                 ToolTipService.ToolTip="show in explorer">
                                                             <Path Width="14" Height="14" Stretch="Uniform"
+                                                                  IsHitTestVisible="False"
                                                                   Stroke="{ThemeResource TextSecondaryBrush}"
                                                                   StrokeThickness="1.5"
                                                                   StrokeLineJoin="Round"
@@ -680,6 +681,7 @@
                                                                 Click="CardDeleteButton_Click"
                                                                 ToolTipService.ToolTip="delete clip">
                                                             <Path Width="14" Height="14" Stretch="Uniform"
+                                                                  IsHitTestVisible="False"
                                                                   Stroke="{ThemeResource TextSecondaryBrush}"
                                                                   StrokeThickness="1.5"
                                                                   StrokeStartLineCap="Round"
@@ -1141,7 +1143,7 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                             <TextBlock x:Name="UpdateVersionText"
-                                                       Text="version 1.0.0"
+                                                       Text="version 1.0.1"
                                                        FontSize="13.5"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="UpdateStatusText"

@@ -535,6 +535,12 @@ unsafe fn wgc_worker(
             if !publisher.shared.running.load(Ordering::Acquire) {
                 return Ok(());
             }
+            if publisher.shared.is_paused.load(Ordering::Acquire) {
+                while let Ok(stale) = pool.TryGetNextFrame() {
+                    let _ = stale.Close();
+                }
+                return Ok(());
+            }
             let mut frame = match pool.TryGetNextFrame() {
                 Ok(frame) => frame,
                 Err(error) if empty_frame_queue(&error) => return Ok(()),
@@ -617,7 +623,8 @@ unsafe fn wgc_worker(
             qpc100ns() - shared.start_qpc.load(Ordering::Acquire),
             Ordering::Release,
         );
-        std::thread::sleep(Duration::from_millis(10));
+        let sleep_ms = if shared.is_paused.load(Ordering::Acquire) { 35 } else { 10 };
+        std::thread::sleep(Duration::from_millis(sleep_ms));
     }
     if closed.load(Ordering::Acquire) && options & 32 == 0 {
         shared.has_error.store(true, Ordering::Release);

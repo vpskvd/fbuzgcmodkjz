@@ -51,6 +51,7 @@ public sealed class ReplayItem : INotifyPropertyChanged
     public string ThumbPath => ReplayLibrary.ThumbnailPathFor(VideoPath);
 
     internal bool Busy;
+    internal Task? EnsureTask;
     public bool MetadataLoaded { get; internal set; }
 
     public long SizeBytes
@@ -409,12 +410,19 @@ public sealed class ReplayLibrary
         foreach (ReplayItem item in items) await EnsureAsync(item);
     }
 
-    public async Task EnsureAsync(ReplayItem item)
+    public Task EnsureAsync(ReplayItem item)
     {
-        if (item.Busy) return;
         bool thumbOk = item.Thumbnail != null && File.Exists(item.ThumbPath);
-        if (item.MetadataLoaded && thumbOk) return;
+        if (item.MetadataLoaded && thumbOk) return Task.CompletedTask;
+        if (item.EnsureTask is { IsCompleted: false } existing) return existing;
 
+        Task task = EnsureCoreAsync(item, thumbOk);
+        item.EnsureTask = task;
+        return task;
+    }
+
+    private static async Task EnsureCoreAsync(ReplayItem item, bool thumbOk)
+    {
         item.Busy = true;
         try
         {
@@ -426,7 +434,11 @@ public sealed class ReplayLibrary
         {
             Logger.Warn($"gallery prepare failed for '{item.VideoPath}': {ex.Message}");
         }
-        finally { item.Busy = false; }
+        finally
+        {
+            item.Busy = false;
+            item.EnsureTask = null;
+        }
     }
 
     private static async Task LoadMetadataAsync(ReplayItem item, StorageFile file)
