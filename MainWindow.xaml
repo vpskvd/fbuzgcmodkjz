@@ -831,24 +831,22 @@
                                             </ComboBox>
                                             <Grid x:Name="DurationCustomWrap"
                                                   Width="96"
+                                                  Height="32"
                                                   HorizontalAlignment="Right"
                                                   VerticalAlignment="Center"
                                                   Visibility="Collapsed">
                                                 <TextBox x:Name="DurationCustomBox"
-                                                         Height="32"
-                                                         Padding="10,0,22,0"
-                                                         CornerRadius="4"
+                                                         Style="{StaticResource CompactNumberTextBoxStyle}"
                                                          PlaceholderText="60"
                                                          InputScope="Number"
-                                                         VerticalContentAlignment="Center"
                                                          TextChanged="DurationCustomBox_TextChanged"
                                                          LostFocus="DurationCustomBox_LostFocus"/>
                                                 <TextBlock Text="s"
-                                                           FontSize="12"
+                                                           FontSize="12.5"
                                                            Foreground="{ThemeResource TextTertiaryBrush}"
                                                            HorizontalAlignment="Right"
                                                            VerticalAlignment="Center"
-                                                           Margin="0,0,9,0"
+                                                           Margin="0,0,10,1"
                                                            IsHitTestVisible="False"/>
                                             </Grid>
                                         </Grid>
@@ -886,7 +884,7 @@
                         <!-- 3. AUDIO -->
                         <StackPanel Spacing="8">
                             <TextBlock Text="audio" Style="{StaticResource SettingGroupHeader}"/>
-                            <Border Style="{StaticResource SettingsCard}" Padding="16,12,16,0">
+                            <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <local:SettingRow Label="microphone">
                                         <ComboBox x:Name="MicCombo"
@@ -900,7 +898,7 @@
                                             BorderThickness="1"
                                             CornerRadius="6"
                                             Padding="12,8"
-                                            Margin="0,4,0,12">
+                                            Margin="0,2,0,12">
                                         <Grid ColumnSpacing="12">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -1020,16 +1018,15 @@
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
                                                     <TextBox x:Name="AddAudioAppBox"
-                                                             Height="30"
-                                                             CornerRadius="4"
+                                                             Style="{StaticResource CompactNumberTextBoxStyle}"
+                                                             Padding="10,0,10,1"
                                                              PlaceholderText="add app (e.g. csgo.exe, discord.exe)"
-                                                             VerticalContentAlignment="Center"
                                                              KeyDown="AddAudioAppBox_KeyDown"/>
                                                     <Button x:Name="AddAudioAppButton"
                                                             Grid.Column="1"
                                                             Style="{StaticResource BaseButtonStyle}"
-                                                            Height="30"
-                                                            MinHeight="30"
+                                                            Height="32"
+                                                            MinHeight="32"
                                                             Padding="12,0"
                                                             CornerRadius="4"
                                                             FontSize="12"
@@ -1046,12 +1043,12 @@
                         <!-- 4. STORAGE AND HOTKEYS -->
                         <StackPanel Spacing="8">
                             <TextBlock Text="storage and hotkeys" Style="{StaticResource SettingGroupHeader}"/>
-                            <Border Style="{StaticResource SettingsCard}" Padding="16,12,16,0">
+                            <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <TextBlock Text="save location"
                                                FontSize="13.5"
                                                Foreground="{ThemeResource TextPrimaryBrush}"
-                                               Margin="0,0,0,8"/>
+                                               Margin="0,12,0,8"/>
                                     <Grid ColumnSpacing="16" Margin="0,0,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -1059,9 +1056,8 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBox x:Name="SaveLocationBox"
                                                  Grid.Column="0"
-                                                 Height="32"
-                                                 CornerRadius="4"
-                                                 VerticalContentAlignment="Center"
+                                                 Style="{StaticResource CompactNumberTextBoxStyle}"
+                                                 Padding="10,0,10,1"
                                                  TextChanged="SaveLocationBox_TextChanged"/>
                                         <Button x:Name="BrowseSaveLocationButton"
                                                 Grid.Column="1"
@@ -1140,14 +1136,14 @@
                         <!-- 6. ADVANCED -->
                         <StackPanel Spacing="8">
                             <TextBlock Text="advanced" Style="{StaticResource SettingGroupHeader}"/>
-                            <Border Style="{StaticResource SettingsCard}" Padding="16,12,16,0">
+                            <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <Border Background="{ThemeResource WarningBgBrush}"
                                             BorderBrush="{ThemeResource WarningBorderBrush}"
                                             BorderThickness="1"
                                             CornerRadius="6"
                                             Padding="12,8"
-                                            Margin="0,0,0,8">
+                                            Margin="0,12,0,4">
                                         <Grid ColumnSpacing="12">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -1228,14 +1224,14 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <Grid MinHeight="52" Padding="0,8" ColumnSpacing="12">
+                                    <Grid MinHeight="56" Padding="0,10" ColumnSpacing="12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                             <TextBlock x:Name="UpdateVersionText"
-                                                       Text="version 1.0.3"
+                                                       Text="version 1.0.4"
                                                        FontSize="13.5"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="UpdateStatusText"
