@@ -1,5 +1,5 @@
 #define MyAppName "Instant Replay"
-#define MyAppVersion "1.0.4"
+#define MyAppVersion "1.0.5"
 #define MyAppPublisher "Instant Replay"
 #define MyAppExeName "replay.exe"
 #define MyAppUrl "https://github.com/vpskvd/fbuzgcmodkjz"

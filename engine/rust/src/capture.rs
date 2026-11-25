@@ -6,7 +6,7 @@ use std::sync::{
 use std::time::Duration;
 use windows::{
     core::*,
-    Foundation::TypedEventHandler,
+    Foundation::{Metadata::ApiInformation, TypedEventHandler},
     Graphics::{Capture::*, DirectX::DirectXPixelFormat, SizeInt32},
     Win32::{
         Foundation::*,
@@ -20,6 +20,19 @@ pub const GAP_BUCKETS: usize = 8;
 fn empty_frame_queue(error: &windows::core::Error) -> bool {
     error.code().is_ok()
 }
+pub fn wgc_borderless_supported() -> bool {
+    let did_init = unsafe { RoInitialize(RO_INIT_MULTITHREADED).is_ok() };
+    let ok = ApiInformation::IsPropertyPresent(
+        &HSTRING::from("Windows.Graphics.Capture.GraphicsCaptureSession"),
+        &HSTRING::from("IsBorderRequired"),
+    )
+    .unwrap_or(false);
+    if did_init {
+        unsafe { RoUninitialize() };
+    }
+    ok
+}
+
 pub fn gap_bucket(ms: f64) -> usize {
     [5., 10., 14., 18., 25., 35., 50.]
         .iter()

@@ -119,7 +119,7 @@ public sealed class Settings
 
     public string QualityPreset { get; set; } = "Balanced";
     public string EncoderChoice { get; set; } = "Auto";
-    public string CaptureMethod { get; set; } = "Wgc";
+    public string CaptureMethod { get; set; } = "Auto";
     public string CaptureTarget { get; set; } = "Display";
     public List<GameRule> SpecificWindows { get; set; } = [];
     public int CaptureMonitorIndex { get; set; } = -1;
@@ -174,6 +174,13 @@ public sealed class Settings
                         .Where(a => !string.IsNullOrEmpty(a))
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .ToList();
+                    loaded.CaptureMethod = loaded.CaptureMethod switch
+                    {
+                        "Dxgi" => "Dxgi",
+                        "Wgc" when !ReplayEngine.WgcBorderlessSupported() && ReplayEngine.DxgiDuplicationSupported() => "Auto",
+                        "Wgc" => "Wgc",
+                        _ => "Auto"
+                    };
                     loaded.CaptureBorder = false;
                     return loaded;
                 }
@@ -467,8 +474,11 @@ public sealed class RecorderEngine : IDisposable
 
     private static CaptureMethod ResolveCaptureMethod(string choice) => choice switch
     {
-        "Dxgi" => CaptureMethod.Dxgi,
-        _ => CaptureMethod.Wgc,
+        "Dxgi" => ReplayEngine.DxgiDuplicationSupported() ? CaptureMethod.Dxgi : CaptureMethod.Wgc,
+        "Wgc" => !ReplayEngine.WgcBorderlessSupported() && ReplayEngine.DxgiDuplicationSupported()
+            ? CaptureMethod.Dxgi
+            : CaptureMethod.Wgc,
+        _ => ReplayEngine.DxgiDuplicationSupported() ? CaptureMethod.Dxgi : CaptureMethod.Wgc,
     };
 
     public bool Start(string tempDir, bool wipeSegments = true)
@@ -946,6 +956,9 @@ internal static class IrNative
     internal static extern int IR_DxgiDuplicationSupported();
 
     [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int IR_WgcBorderlessSupported();
+
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
     internal static extern int IR_ActiveCaptureMethod(IntPtr engine);
 
     [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
@@ -1005,6 +1018,15 @@ public sealed class ReplayEngine : IDisposable
     {
         try { return IrNative.IR_DxgiDuplicationSupported() == 1; }
         catch { return false; }
+    }
+
+    private static bool? s_wgcBorderless;
+    public static bool WgcBorderlessSupported()
+    {
+        if (s_wgcBorderless.HasValue) return s_wgcBorderless.Value;
+        try { s_wgcBorderless = IrNative.IR_WgcBorderlessSupported() == 1; }
+        catch { s_wgcBorderless = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000); }
+        return s_wgcBorderless.Value;
     }
 
     public const int SaveOk = IrNative.OK;

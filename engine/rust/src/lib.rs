@@ -1679,6 +1679,11 @@ pub unsafe extern "C" fn IR_DxgiDuplicationSupported() -> i32 {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn IR_WgcBorderlessSupported() -> i32 {
+    guard!({ i32::from(capture::wgc_borderless_supported()) })
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn IR_LastHresult(engine: *mut Engine) -> i32 {
     guard!({
         if engine.is_null() {

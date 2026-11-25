@@ -2873,7 +2873,12 @@ public partial class MainWindow : Window
         try { dxgiOk = ReplayEngine.DxgiDuplicationSupported(); }
         catch { }
         CaptureDxgiItem.IsEnabled = dxgiOk;
-        CaptureMethodCombo.SelectedIndex = _settings.CaptureMethod == "Dxgi" && dxgiOk ? 1 : 0;
+        CaptureMethodCombo.SelectedIndex = _settings.CaptureMethod switch
+        {
+            "Wgc" => 1,
+            "Dxgi" when dxgiOk => 2,
+            _ => 0
+        };
         UpdateCaptureMethodControls();
     }
 
@@ -3097,7 +3102,12 @@ public partial class MainWindow : Window
     private void CaptureMethodCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_initializing) return;
-        _settings.CaptureMethod = CaptureMethodCombo.SelectedIndex == 1 ? "Dxgi" : "Wgc";
+        _settings.CaptureMethod = CaptureMethodCombo.SelectedIndex switch
+        {
+            1 => "Wgc",
+            2 => "Dxgi",
+            _ => "Auto"
+        };
         UpdateCaptureMethodControls();
         CheckDirty();
     }
@@ -3618,7 +3628,12 @@ public partial class MainWindow : Window
             InitQualitySegments();
             SaveLocationBox.Text = _settings.GetEffectiveSaveDestination();
             InitEncoderSegments();
-            CaptureMethodCombo.SelectedIndex = _settings.CaptureMethod == "Dxgi" && CaptureDxgiItem.IsEnabled ? 1 : 0;
+            CaptureMethodCombo.SelectedIndex = _settings.CaptureMethod switch
+            {
+                "Wgc" => 1,
+                "Dxgi" when CaptureDxgiItem.IsEnabled => 2,
+                _ => 0
+            };
             InitCaptureTargets();
         }
         finally { _initializing = wasInit; }
@@ -3696,6 +3711,7 @@ public partial class MainWindow : Window
         StatusInfoBar.Severity = severity;
         StatusInfoBar.Title = title;
         StatusInfoBar.Message = message;
+        StatusInfoBar.Visibility = Visibility.Visible;
         StatusInfoBar.IsOpen = true;
         EnsureInfoBarTimer();
         _infoBarTimer!.Stop();
@@ -3706,6 +3722,13 @@ public partial class MainWindow : Window
     {
         _infoBarTimer?.Stop();
         StatusInfoBar.IsOpen = false;
+        StatusInfoBar.Visibility = Visibility.Collapsed;
+    }
+
+    private void StatusInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
+    {
+        _infoBarTimer?.Stop();
+        StatusInfoBar.Visibility = Visibility.Collapsed;
     }
 
     private static void AnimateDouble(DependencyObject target, string property, double from, double to,
