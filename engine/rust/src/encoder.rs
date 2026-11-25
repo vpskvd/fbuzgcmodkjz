@@ -37,7 +37,7 @@ pub enum EncoderKind {
     HardwareGpu = 4,
 }
 
-const HW_FAIL_LIMIT: u32 = 8;
+const HW_FAIL_LIMIT: u32 = 24;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum MfFlavour {
@@ -448,6 +448,7 @@ mod mf {
             let codec = transform.cast::<ICodecAPI>().ok();
             if let Some(c) = &codec {
                 codec_u32(c, &CODECAPI_AVLowLatencyMode, low_latency);
+                codec_u32(c, &CODECAPI_AVEncCommonQualityVsSpeed, 33);
                 codec_u32(c, &CODECAPI_AVEncCommonRateControlMode, eAVEncCommonRateControlMode_UnconstrainedVBR.0 as u32);
                 codec_u32(c, &CODECAPI_AVEncCommonMeanBitRate, bps);
                 codec_u32(c, &CODECAPI_AVEncMPVGOPSize, gop_frames);
@@ -606,11 +607,14 @@ mod mf {
                 let sync = self.events.is_none();
                 if !sync {
                     let t0 = Instant::now();
+                    let mut spins = 0u32;
                     while self.pending_inputs == 0 {
                         if t0.elapsed() > Duration::from_millis(200) {
                             return Err(-102);
                         }
-                        std::thread::sleep(Duration::from_micros(500));
+                        let sleep_ms = if spins < 4 { 1 } else { 2 };
+                        spins += 1;
+                        std::thread::sleep(Duration::from_millis(sleep_ms));
                         self.pump(out)?;
                     }
                 }
@@ -676,11 +680,14 @@ mod mf {
 
                 self.pump(out)?;
                 let t0 = Instant::now();
+                let mut spins = 0u32;
                 while self.pending_inputs == 0 {
                     if t0.elapsed() > Duration::from_millis(200) {
                         return Err(-102);
                     }
-                    std::thread::sleep(Duration::from_micros(500));
+                    let sleep_ms = if spins < 4 { 1 } else { 2 };
+                    spins += 1;
+                    std::thread::sleep(Duration::from_millis(sleep_ms));
                     self.pump(out)?;
                 }
                 self.transform.ProcessInput(0, sample, 0).map_err(e)?;
@@ -693,15 +700,18 @@ mod mf {
         pub fn wait_room(&mut self, max_inflight: u64, out: &mut Vec<EncodedFrame>) -> R<()> {
             unsafe {
                 let t0 = Instant::now();
+                let mut spins = 0u32;
                 loop {
                     self.pump(out)?;
                     if self.submitted.saturating_sub(self.received) < max_inflight {
                         return Ok(());
                     }
-                    if t0.elapsed() > Duration::from_millis(50) {
+                    if t0.elapsed() > Duration::from_millis(80) {
                         return Err(-104);
                     }
-                    std::thread::sleep(Duration::from_micros(500));
+                    let sleep_ms = if spins < 4 { 1 } else { 2 };
+                    spins += 1;
+                    std::thread::sleep(Duration::from_millis(sleep_ms));
                 }
             }
         }
@@ -1660,27 +1670,20 @@ pub fn bgra_to_nv12(
             .enumerate()
             .for_each(|(c, (y_pair, uv_row))| {
                 let (y_top, y_bot) = y_pair.split_at_mut(dw);
-                let rt = &bgra[(2 * c) * rp..];
-                let rb = &bgra[(2 * c + 1) * rp..];
-                for x in 0..dw {
-                    let p = &rt[x * 4..];
-                    y_top[x] = y601(p[2] as i32, p[1] as i32, p[0] as i32);
+                let rt = &bgra[(2 * c) * rp..(2 * c) * rp + dw * 4];
+                let rb = &bgra[(2 * c + 1) * rp..(2 * c + 1) * rp + dw * 4];
+                for (px, y_out) in rt.chunks_exact(4).zip(y_top.iter_mut()) {
+                    *y_out = y601(px[2] as i32, px[1] as i32, px[0] as i32);
                 }
-                for x in 0..dw {
-                    let p = &rb[x * 4..];
-                    y_bot[x] = y601(p[2] as i32, p[1] as i32, p[0] as i32);
+                for (px, y_out) in rb.chunks_exact(4).zip(y_bot.iter_mut()) {
+                    *y_out = y601(px[2] as i32, px[1] as i32, px[0] as i32);
                 }
-                for x in 0..dw / 2 {
-                    let o = x * 8;
-                    let (p00, p01, p10, p11) = (&rt[o..], &rt[o + 4..], &rb[o..], &rb[o + 4..]);
-                    let b =
-                        (p00[0] as i32 + p01[0] as i32 + p10[0] as i32 + p11[0] as i32 + 2) >> 2;
-                    let g =
-                        (p00[1] as i32 + p01[1] as i32 + p10[1] as i32 + p11[1] as i32 + 2) >> 2;
-                    let r =
-                        (p00[2] as i32 + p01[2] as i32 + p10[2] as i32 + p11[2] as i32 + 2) >> 2;
-                    uv_row[2 * x] = u601(r, g, b);
-                    uv_row[2 * x + 1] = v601(r, g, b);
+                for ((t2, b2), uv_out) in rt.chunks_exact(8).zip(rb.chunks_exact(8)).zip(uv_row.chunks_exact_mut(2)) {
+                    let b = (t2[0] as i32 + t2[4] as i32 + b2[0] as i32 + b2[4] as i32 + 2) >> 2;
+                    let g = (t2[1] as i32 + t2[5] as i32 + b2[1] as i32 + b2[5] as i32 + 2) >> 2;
+                    let r = (t2[2] as i32 + t2[6] as i32 + b2[2] as i32 + b2[6] as i32 + 2) >> 2;
+                    uv_out[0] = u601(r, g, b);
+                    uv_out[1] = v601(r, g, b);
                 }
             });
         return true;

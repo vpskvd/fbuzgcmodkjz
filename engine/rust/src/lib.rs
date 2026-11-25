@@ -545,23 +545,22 @@ enum GpuExit {
 
 fn wait_gpu_input(
     shared: &Arc<SharedState>,
-    timeout: std::time::Duration,
+    _timeout: std::time::Duration,
 ) -> Option<Arc<encoder::GpuInput>> {
-    let deadline = Instant::now() + timeout;
     loop {
         if !shared.running.load(Ordering::Relaxed) {
+            return None;
+        }
+        if shared.gpu_mode.load(Ordering::Acquire) == 0 {
             return None;
         }
         if let Some(g) = shared.gpu.lock().unwrap_or_else(|e| e.into_inner()).clone() {
             return Some(g);
         }
-        if Instant::now() >= deadline && shared.capture_options.load(Ordering::Acquire) & 32 == 0 {
-            return None;
-        }
         let q = shared.raw.lock().unwrap_or_else(|e| e.into_inner());
         let _ = shared
             .raw_wait
-            .wait_timeout(q, std::time::Duration::from_millis(20))
+            .wait_timeout(q, std::time::Duration::from_millis(50))
             .unwrap_or_else(|e| e.into_inner());
     }
 }
@@ -597,9 +596,17 @@ fn encoder_thread(
                     Err(hr) => shared.hw_init_hr.store(hr, Ordering::Relaxed),
                 }
             }
-            None => shared.hw_init_hr.store(-110, Ordering::Relaxed),
+            None => {
+                if !shared.running.load(Ordering::Acquire) {
+                    return;
+                }
+                shared.hw_init_hr.store(-110, Ordering::Relaxed);
+            }
         }
         if gpu_enc.is_none() {
+            if !shared.running.load(Ordering::Acquire) {
+                return;
+            }
             shared.gpu_mode.store(0, Ordering::Relaxed);
             *shared.gpu.lock().unwrap_or_else(|e| e.into_inner()) = None;
         }
@@ -657,6 +664,9 @@ fn encoder_thread(
                     shared.hw_init_hr.store(hr, Ordering::Relaxed);
                     drop(gpu_enc.take());
                 }
+            }
+            if !shared.running.load(Ordering::Acquire) {
+                return;
             }
             shared.gpu_mode.store(0, Ordering::Relaxed);
             *shared.gpu.lock().unwrap_or_else(|e| e.into_inner()) = None;
@@ -787,11 +797,17 @@ fn gpu_loop(
                         .t_encode_ns
                         .fetch_add(start.elapsed().as_nanos() as i64, Ordering::Relaxed);
                 }
-                Ok(None) => {}
+                Ok(None) => {
+                    std::thread::sleep(Duration::from_millis(2));
+                }
                 Err(hr) => {
+                    if hr == -102 || hr == -104 {
+                        std::thread::sleep(Duration::from_millis(4));
+                        continue;
+                    }
                     fails += 1;
                     shared.frames_dropped.fetch_add(1, Ordering::Relaxed);
-                    if fails >= 8 {
+                    if fails >= 16 {
                         return GpuExit::Fallback(hr);
                     }
                 }

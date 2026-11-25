@@ -1143,7 +1143,7 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                             <TextBlock x:Name="UpdateVersionText"
-                                                       Text="version 1.0.1"
+                                                       Text="version 1.0.2"
                                                        FontSize="13.5"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="UpdateStatusText"

@@ -476,7 +476,7 @@ public sealed class RecorderEngine : IDisposable
                 _detector = new GameDetector(_settings.SpecificWindows);
                 _paused = true;
                 _targetState = "waiting for game";
-                _targetTimer = new System.Threading.Timer(_ => PollTarget(), null, 0, 200);
+                _targetTimer = new System.Threading.Timer(_ => PollTarget(), null, 0, 350);
                 return true;
             }
             bool ok = StartNative(IntPtr.Zero);
