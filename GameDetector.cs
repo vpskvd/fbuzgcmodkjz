@@ -19,6 +19,8 @@ internal sealed record CaptureWindow(IntPtr Handle, uint ProcessId, string Execu
     public CaptureSurface Surface { get; init; }
 }
 
+public sealed record AudioAppCandidate(string Executable, string DisplayName, bool IsAudioActive);
+
 internal sealed class GameDetector
 {
     private sealed record Catalog(FrozenDictionary<string, GameRule[]> Rules, int Count);
@@ -116,8 +118,87 @@ internal sealed class GameDetector
         return pid == target.ProcessId;
     }
 
+    public static bool IsMinimized(CaptureWindow target) => IsIconic(target.Handle);
+
     public static bool IsForeground(CaptureWindow target) =>
         GetAncestor(GetForegroundWindow(), 2) == target.Handle && IsAlive(target);
+
+    public static List<AudioAppCandidate> EnumerateAudioApps()
+    {
+        var byExe = new Dictionary<string, AudioAppCandidate>(StringComparer.OrdinalIgnoreCase);
+
+        static bool IsNoiseExe(string exe) =>
+            string.IsNullOrWhiteSpace(exe)
+            || Excluded.Contains(exe)
+            || exe.Equals("audiodg.exe", StringComparison.OrdinalIgnoreCase)
+            || exe.Equals("svchost.exe", StringComparison.OrdinalIgnoreCase)
+            || exe.Equals("System", StringComparison.OrdinalIgnoreCase)
+            || exe.Equals("Idle", StringComparison.OrdinalIgnoreCase)
+            || exe.Equals("RuntimeBroker.exe", StringComparison.OrdinalIgnoreCase)
+            || exe.Equals("backgroundTaskHost.exe", StringComparison.OrdinalIgnoreCase)
+            || exe.Equals("taskhostw.exe", StringComparison.OrdinalIgnoreCase);
+
+        // 1. Query active/recent WASAPI render audio sessions so audio-producing apps surface first.
+        try
+        {
+            foreach (uint pid in AudioSessionInspector.GetRenderSessionPids())
+            {
+                if (pid == 0 || pid == Environment.ProcessId) continue;
+                string? exe = QueryExeForPid(pid);
+                if (exe == null || IsNoiseExe(exe)) continue;
+                string key = exe.ToLowerInvariant();
+                if (!byExe.ContainsKey(key))
+                {
+                    string display = Path.GetFileNameWithoutExtension(exe).ToLowerInvariant();
+                    byExe[key] = new AudioAppCandidate(key, display, true);
+                }
+            }
+        }
+        catch { }
+
+        // 2. Also include visible user applications (e.g. games or Discord idle before voice/sound).
+        try
+        {
+            foreach (var proc in System.Diagnostics.Process.GetProcesses())
+            {
+                try
+                {
+                    if (proc.Id == Environment.ProcessId || proc.MainWindowHandle == IntPtr.Zero) continue;
+                    string? exe = QueryExeForPid((uint)proc.Id) ?? (proc.ProcessName + ".exe");
+                    if (string.IsNullOrWhiteSpace(exe) || IsNoiseExe(exe)) continue;
+                    string key = Path.GetFileName(exe).ToLowerInvariant();
+                    if (!key.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) key += ".exe";
+                    if (!byExe.ContainsKey(key))
+                    {
+                        string display = Path.GetFileNameWithoutExtension(key).ToLowerInvariant();
+                        byExe[key] = new AudioAppCandidate(key, display, false);
+                    }
+                }
+                catch { }
+                finally { proc.Dispose(); }
+            }
+        }
+        catch { }
+
+        return byExe.Values
+            .OrderByDescending(a => a.IsAudioActive)
+            .ThenBy(a => a.Executable, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static string? QueryExeForPid(uint pid)
+    {
+        IntPtr process = OpenProcess(0x1000, false, pid);
+        if (process == IntPtr.Zero) return null;
+        try
+        {
+            var path = new StringBuilder(1024);
+            uint length = (uint)path.Capacity;
+            if (!QueryFullProcessImageNameW(process, 0, path, ref length)) return null;
+            return Path.GetFileName(path.ToString());
+        }
+        finally { CloseHandle(process); }
+    }
 
     private string? Executable(uint pid)
     {
@@ -217,4 +298,86 @@ internal sealed class GameDetector
     [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, StringBuilder path, ref uint length);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
+
+    private static class AudioSessionInspector
+    {
+        [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+        private class MMDeviceEnumeratorCom { }
+
+        [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IMMDeviceEnumerator
+        {
+            int EnumAudioEndpoints(int dataFlow, uint stateMask, out IntPtr devices);
+            int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice endpoint);
+        }
+
+        [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IMMDevice
+        {
+            int Activate(ref Guid iid, uint clsCtx, IntPtr activationParams, [MarshalAs(UnmanagedType.IUnknown)] out object iface);
+        }
+
+        [ComImport, Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IAudioSessionManager2
+        {
+            int GetAudioSessionControl(IntPtr audioSessionGuid, uint streamFlags, out IntPtr sessionControl);
+            int GetSimpleAudioVolume(IntPtr audioSessionGuid, uint streamFlags, out IntPtr audioVolume);
+            int GetSessionEnumerator(out IAudioSessionEnumerator sessionEnum);
+        }
+
+        [ComImport, Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IAudioSessionEnumerator
+        {
+            int GetCount(out int sessionCount);
+            int GetSession(int sessionIndex, out IAudioSessionControl session);
+        }
+
+        [ComImport, Guid("F4B1A599-7266-4319-A8CA-E70ACB11E8CD"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IAudioSessionControl
+        {
+            int GetState(out int state);
+        }
+
+        [ComImport, Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IAudioSessionControl2
+        {
+            int GetState(out int state);
+            int GetDisplayName([MarshalAs(UnmanagedType.LPWStr)] out string name);
+            int SetDisplayName([MarshalAs(UnmanagedType.LPWStr)] string value, ref Guid eventContext);
+            int GetIconPath([MarshalAs(UnmanagedType.LPWStr)] out string path);
+            int SetIconPath([MarshalAs(UnmanagedType.LPWStr)] string value, ref Guid eventContext);
+            int GetGroupingParam(out Guid groupingId);
+            int SetGroupingParam(ref Guid @override, ref Guid eventContext);
+            int RegisterAudioSessionNotification(IntPtr client);
+            int UnregisterAudioSessionNotification(IntPtr client);
+            int GetSessionIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string retVal);
+            int GetSessionInstanceIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string retVal);
+            int GetProcessId(out uint retVal);
+        }
+
+        public static List<uint> GetRenderSessionPids()
+        {
+            var pids = new List<uint>();
+            var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorCom();
+            if (enumerator.GetDefaultAudioEndpoint(0, 1, out var device) != 0 || device == null)
+                return pids;
+
+            Guid mgrIid = typeof(IAudioSessionManager2).GUID;
+            if (device.Activate(ref mgrIid, 23, IntPtr.Zero, out object mgrObj) != 0 || mgrObj is not IAudioSessionManager2 mgr)
+                return pids;
+
+            if (mgr.GetSessionEnumerator(out var sessionEnum) != 0 || sessionEnum == null)
+                return pids;
+
+            if (sessionEnum.GetCount(out int count) != 0) return pids;
+            for (int i = 0; i < count; i++)
+            {
+                if (sessionEnum.GetSession(i, out var ctl) != 0 || ctl is not IAudioSessionControl2 ctl2)
+                    continue;
+                if (ctl2.GetState(out int state) == 0 && state != 2 && ctl2.GetProcessId(out uint pid) == 0 && pid != 0)
+                    pids.Add(pid);
+            }
+            return pids;
+        }
+    }
 }

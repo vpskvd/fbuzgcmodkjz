@@ -161,6 +161,7 @@ pub struct SharedState {
     pub n_slot_resync: AtomicI64,
     pub bgra_pool: Mutex<Vec<Vec<u8>>>,
     pub n_capture_drop: AtomicI64,
+    pub audio_apps: Mutex<Vec<String>>,
 }
 
 impl SharedState {
@@ -278,6 +279,7 @@ impl SharedState {
             n_slot_resync: AtomicI64::new(0),
             bgra_pool: Mutex::new(Vec::new()),
             n_capture_drop: AtomicI64::new(0),
+            audio_apps: Mutex::new(Vec::new()),
         })
     }
 
@@ -1914,6 +1916,30 @@ pub unsafe extern "C" fn IR_MicStatus(
             copy_wide(&text, active_name, active_cap);
         }
     }));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn IR_SetAudioApps(engine: *mut Engine, apps: *const u16) -> i32 {
+    guard!({
+        let Some(engine) = engine.as_ref() else {
+            return IR_FAIL;
+        };
+        let list = if apps.is_null() {
+            Vec::new()
+        } else {
+            let mut len = 0usize;
+            while *apps.add(len) != 0 && len < 8192 {
+                len += 1;
+            }
+            let raw = String::from_utf16_lossy(std::slice::from_raw_parts(apps, len));
+            raw.split(['|', '\n', ';'])
+                .map(|s| s.trim().to_ascii_lowercase())
+                .filter(|s| !s.is_empty())
+                .collect()
+        };
+        *engine.shared.audio_apps.lock().unwrap_or_else(|e| e.into_inner()) = list;
+        IR_OK
+    })
 }
 
 #[no_mangle]

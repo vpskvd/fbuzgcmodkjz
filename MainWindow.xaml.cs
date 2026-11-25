@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr SendMessageW(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] private static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int vKey);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterWindowMessage(string lpString);
     [DllImport("kernel32.dll")] private static extern bool GetSystemTimes(out FILETIME lpIdleTime, out FILETIME lpKernelTime, out FILETIME lpUserTime);
     [DllImport("kernel32.dll")] private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
@@ -55,12 +56,15 @@ public partial class MainWindow : Window
     private const int SwHide = 0;
     private const int SwShow = 5;
     private const int WM_HOTKEY = 0x0312;
+    private const uint WmSysCommand = 0x0112;
+    private const int ScKeyMenu = 0xF100;
 
     internal const int HotkeyId = 0x1000;
     internal const uint ModAlt = 0x0001;
     internal const uint ModControl = 0x0002;
     internal const uint ModShift = 0x0004;
     internal const uint ModWin = 0x0008;
+    private const uint ModNoRepeat = 0x4000;
 
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
@@ -150,6 +154,10 @@ public partial class MainWindow : Window
     private bool _syncingStartupToggle;
     private bool _syncingMicCombo;
     private bool _syncingAudioToggles;
+    private bool _syncingDurationCustom;
+    private bool _durationCustomVisible;
+    private Storyboard? _durationWidthStoryboard;
+    private List<AudioAppCandidate> _audioApps = new();
     private bool _dirty;
     private bool _savingChanges;
     private PendingSettings _baseline;
@@ -234,7 +242,7 @@ public partial class MainWindow : Window
         _library.Items.CollectionChanged += (_, _) => UpdateGalleryChrome();
         _library.FolderChanged += () => _ = RefreshGalleryAsync();
 
-        if (!RegisterHotKey(_hwnd, HotkeyId, _settings.HotkeyModifiers, _settings.HotkeyVk))
+        if (!RegisterHotkeyInternal(_settings.HotkeyModifiers, _settings.HotkeyVk))
             Logger.Warn($"could not register global hotkey {HotkeyDisplay.Format(_settings.HotkeyModifiers, _settings.HotkeyVk)}.");
 
         ApplyAppTheme(_settings.DarkMode);
@@ -299,8 +307,8 @@ public partial class MainWindow : Window
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
         Activated += Window_Activated;
         Closed += Window_ClosedRequested;
-        RootGrid.KeyDown += Window_PreviewKeyDown;
-        RootGrid.KeyUp += Window_PreviewKeyUp;
+        RootGrid.PreviewKeyDown += Window_PreviewKeyDown;
+        RootGrid.PreviewKeyUp += Window_PreviewKeyUp;
         if (TrimTrackGrid != null)
         {
             TrimTrackGrid.PointerCanceled += (_, e) => EndTrimDrag(e.Pointer);
@@ -474,7 +482,11 @@ public partial class MainWindow : Window
     {
         if (msg == WM_HOTKEY && wParam.ToInt32() == HotkeyId)
         {
-            _ = SaveReplayAsync();
+            if (!_capturingHotkey) _ = SaveReplayAsync();
+            return IntPtr.Zero;
+        }
+        if (msg == WmSysCommand && _capturingHotkey && ((int)(wParam.ToInt64() & 0xFFF0) == ScKeyMenu))
+        {
             return IntPtr.Zero;
         }
         if (msg == s_taskbarButtonCreated && s_taskbarButtonCreated != 0)
@@ -542,7 +554,16 @@ public partial class MainWindow : Window
         string Microphone,
         string SaveDestination,
         bool RecordSystemAudio,
+        string SystemAudioMode,
+        string SystemAudioAppsKey,
         bool RecordMicrophone);
+
+    private static string FormatAudioAppsKey(IEnumerable<string> apps) =>
+        string.Join("|", apps
+            .Select(a => a.Trim().ToLowerInvariant())
+            .Where(a => a.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(a => a, StringComparer.OrdinalIgnoreCase));
 
     private PendingSettings CapturePending() => new(
         _settings.ReplayDurationSeconds,
@@ -559,6 +580,8 @@ public partial class MainWindow : Window
         _settings.Microphone,
         _settings.SaveDestination,
         _settings.RecordSystemAudio,
+        _settings.SystemAudioMode,
+        FormatAudioAppsKey(_settings.SystemAudioApps),
         _settings.RecordMicrophone);
 
     private void NavHomeButton_Click(object sender, RoutedEventArgs e)
@@ -590,6 +613,7 @@ public partial class MainWindow : Window
         {
             RefreshStartupToggleState();
             UpdateMicLiveStatus();
+            RefreshAudioAppsInBackground();
         }
 
         var target = settingsPage ? (FrameworkElement)SettingsPage : HomePage;
@@ -2646,31 +2670,140 @@ public partial class MainWindow : Window
         }
     }
 
-    private void InitDurationSegments() =>
+    private void InitDurationSegments()
+    {
         DurationCombo.SelectedIndex = _settings.ReplayDurationSeconds switch
         {
             30 => 0,
             60 => 1,
             120 => 2,
-            180 => 3,
-            240 => 4,
-            300 => 5,
-            _ => 1
+            _ => 3
         };
+        _syncingDurationCustom = true;
+        DurationCustomBox.Text = _settings.ReplayDurationSeconds.ToString(CultureInfo.InvariantCulture);
+        _syncingDurationCustom = false;
+        SetDurationCustomVisible(DurationCombo.SelectedIndex == 3, animate: false);
+    }
 
     private void DurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_initializing) return;
-        _settings.ReplayDurationSeconds = DurationCombo.SelectedIndex switch
+        bool isCustom = DurationCombo.SelectedIndex == 3;
+        if (isCustom)
         {
-            0 => 30,
-            1 => 60,
-            2 => 120,
-            3 => 180,
-            4 => 240,
-            5 => 300,
-            _ => 60
+            int secs = Math.Clamp(_settings.ReplayDurationSeconds, 5, 600);
+            _settings.ReplayDurationSeconds = secs;
+            _syncingDurationCustom = true;
+            DurationCustomBox.Text = secs.ToString(CultureInfo.InvariantCulture);
+            _syncingDurationCustom = false;
+            SetDurationCustomVisible(true, animate: true);
+            DurationCustomBox.Focus(FocusState.Programmatic);
+            DurationCustomBox.SelectAll();
+        }
+        else
+        {
+            _settings.ReplayDurationSeconds = DurationCombo.SelectedIndex switch
+            {
+                0 => 30,
+                1 => 60,
+                2 => 120,
+                _ => 60
+            };
+            SetDurationCustomVisible(false, animate: true);
+        }
+        CheckDirty();
+    }
+
+    private void SetDurationCustomVisible(bool show, bool animate)
+    {
+        if (DurationCustomWrap.RenderTransform is not TranslateTransform slide)
+        {
+            slide = new TranslateTransform();
+            DurationCustomWrap.RenderTransform = slide;
+        }
+
+        const double expandedWidth = 248.0;
+        const double compactWidth = 144.0;
+        double targetWidth = show ? compactWidth : expandedWidth;
+
+        _durationWidthStoryboard?.Stop();
+        _durationCustomVisible = show;
+
+        if (!animate)
+        {
+            DurationCombo.Width = targetWidth;
+            DurationCustomWrap.Opacity = show ? 1.0 : 0.0;
+            slide.X = show ? 0.0 : 18.0;
+            DurationCustomWrap.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            return;
+        }
+
+        double fromWidth = double.IsNaN(DurationCombo.Width) ? (show ? expandedWidth : compactWidth) : DurationCombo.Width;
+        var widthAnim = new DoubleAnimation
+        {
+            From = fromWidth,
+            To = targetWidth,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EnableDependentAnimation = true,
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
+        Storyboard.SetTarget(widthAnim, DurationCombo);
+        Storyboard.SetTargetProperty(widthAnim, "Width");
+        _durationWidthStoryboard = new Storyboard();
+        _durationWidthStoryboard.Children.Add(widthAnim);
+        _durationWidthStoryboard.Begin();
+
+        if (show)
+        {
+            DurationCustomWrap.Visibility = Visibility.Visible;
+            AnimateDouble(DurationCustomWrap, "Opacity", DurationCustomWrap.Opacity, 1.0, TimeSpan.FromMilliseconds(220),
+                easing: new CubicEase { EasingMode = EasingMode.EaseOut });
+            AnimateDouble(slide, "X", Math.Abs(slide.X) < 0.5 ? 18.0 : slide.X, 0.0, TimeSpan.FromMilliseconds(220),
+                easing: new CubicEase { EasingMode = EasingMode.EaseOut });
+        }
+        else
+        {
+            AnimateDouble(slide, "X", slide.X, 18.0, TimeSpan.FromMilliseconds(160),
+                easing: new CubicEase { EasingMode = EasingMode.EaseIn });
+            AnimateDouble(DurationCustomWrap, "Opacity", DurationCustomWrap.Opacity, 0.0, TimeSpan.FromMilliseconds(160),
+                easing: new CubicEase { EasingMode = EasingMode.EaseIn },
+                onCompleted: () =>
+                {
+                    if (!_durationCustomVisible) DurationCustomWrap.Visibility = Visibility.Collapsed;
+                });
+        }
+    }
+
+    private void DurationCustomBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_initializing || _syncingDurationCustom || !_durationCustomVisible) return;
+        string raw = DurationCustomBox.Text ?? "";
+        string digits = new(raw.Where(char.IsDigit).ToArray());
+        if (digits != raw)
+        {
+            _syncingDurationCustom = true;
+            int caret = DurationCustomBox.SelectionStart;
+            DurationCustomBox.Text = digits;
+            DurationCustomBox.SelectionStart = Math.Min(caret, digits.Length);
+            _syncingDurationCustom = false;
+        }
+        if (int.TryParse(digits, NumberStyles.Integer, CultureInfo.InvariantCulture, out int secs) && secs is >= 5 and <= 600)
+        {
+            _settings.ReplayDurationSeconds = secs;
+            CheckDirty();
+        }
+    }
+
+    private void DurationCustomBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _syncingDurationCustom || !_durationCustomVisible) return;
+        int parsed = int.TryParse(DurationCustomBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v)
+            ? Math.Clamp(v, 5, 600)
+            : Math.Clamp(_settings.ReplayDurationSeconds, 5, 600);
+        _settings.ReplayDurationSeconds = parsed;
+        _syncingDurationCustom = true;
+        DurationCustomBox.Text = parsed.ToString(CultureInfo.InvariantCulture);
+        _syncingDurationCustom = false;
         CheckDirty();
     }
 
@@ -2688,8 +2821,7 @@ public partial class MainWindow : Window
         QualityCombo.SelectedIndex = _settings.QualityPreset switch
         {
             "Balanced" => 1,
-            "Quality" or "High" => 2,
-            "Ultra" => 3,
+            "Quality" or "High" or "Ultra" => 2,
             _ => 0
         };
 
@@ -2700,7 +2832,6 @@ public partial class MainWindow : Window
         {
             1 => "Balanced",
             2 => "High",
-            3 => "Ultra",
             _ => "Low"
         };
         CheckDirty();
@@ -2711,7 +2842,19 @@ public partial class MainWindow : Window
         _syncingAudioToggles = true;
         SysAudioToggle.IsOn = _settings.RecordSystemAudio;
         MicToggle.IsOn = _settings.RecordMicrophone;
+        bool selectedMode = string.Equals(_settings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase);
+        SysAudioModeCombo.SelectedIndex = selectedMode ? 1 : 0;
+        UpdateSystemAudioVisibility();
+        RebuildAudioAppsList();
         _syncingAudioToggles = false;
+    }
+
+    private void UpdateSystemAudioVisibility()
+    {
+        SystemAudioSourceSection.Visibility = _settings.RecordSystemAudio ? Visibility.Visible : Visibility.Collapsed;
+        bool selectedMode = _settings.RecordSystemAudio &&
+            string.Equals(_settings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase);
+        SelectedAudioAppsPanel.Visibility = selectedMode ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void InitEncoderSegments() =>
@@ -2963,6 +3106,155 @@ public partial class MainWindow : Window
     {
         if (_initializing || _syncingAudioToggles) return;
         _settings.RecordSystemAudio = SysAudioToggle.IsOn;
+        UpdateSystemAudioVisibility();
+        if (_settings.RecordSystemAudio &&
+            string.Equals(_settings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase))
+        {
+            RefreshAudioAppsInBackground();
+        }
+        CheckDirty();
+    }
+
+    private void SysAudioModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || _syncingAudioToggles) return;
+        _settings.SystemAudioMode = SysAudioModeCombo.SelectedIndex == 1 ? "SelectedApps" : "All";
+        UpdateSystemAudioVisibility();
+        if (string.Equals(_settings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase))
+        {
+            RefreshAudioAppsInBackground();
+            RebuildAudioAppsList();
+        }
+        CheckDirty();
+    }
+
+    private void RefreshAudioAppsButton_Click(object sender, RoutedEventArgs e) =>
+        RefreshAudioAppsInBackground();
+
+    private void RefreshAudioAppsInBackground()
+    {
+        RefreshAudioAppsButton.IsEnabled = false;
+        _ = Task.Run(() =>
+        {
+            var found = GameDetector.EnumerateAudioApps();
+            _dq.TryEnqueue(() =>
+            {
+                _audioApps = found;
+                RebuildAudioAppsList();
+                RefreshAudioAppsButton.IsEnabled = true;
+            });
+        });
+    }
+
+    private void RebuildAudioAppsList()
+    {
+        AudioAppsListPanel.Children.Clear();
+
+        var selectedSet = new HashSet<string>(
+            _settings.SystemAudioApps.Select(a => a.Trim()),
+            StringComparer.OrdinalIgnoreCase);
+
+        var items = new Dictionary<string, AudioAppCandidate>(StringComparer.OrdinalIgnoreCase);
+        foreach (var app in _audioApps)
+            items[app.Executable] = app;
+        foreach (var saved in selectedSet)
+        {
+            if (string.IsNullOrWhiteSpace(saved) || items.ContainsKey(saved)) continue;
+            string display = Path.GetFileNameWithoutExtension(saved).ToLowerInvariant();
+            items[saved] = new AudioAppCandidate(saved, display, IsAudioActive: false);
+        }
+
+        var ordered = items.Values
+            .OrderByDescending(a => selectedSet.Contains(a.Executable))
+            .ThenByDescending(a => a.IsAudioActive)
+            .ThenBy(a => a.Executable, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (ordered.Count == 0)
+        {
+            AudioAppsListPanel.Children.Add(new TextBlock
+            {
+                Text = "no running audio apps found — add an .exe name below",
+                FontSize = 11.5,
+                Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"]
+            });
+            return;
+        }
+
+        foreach (var app in ordered)
+        {
+            var row = new Grid { ColumnSpacing = 8 };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            string label = string.Equals(app.DisplayName, Path.GetFileNameWithoutExtension(app.Executable), StringComparison.OrdinalIgnoreCase)
+                ? app.Executable.ToLowerInvariant()
+                : $"{app.DisplayName.ToLowerInvariant()} · {app.Executable.ToLowerInvariant()}";
+
+            var cb = new CheckBox
+            {
+                Content = new TextBlock
+                {
+                    Text = label,
+                    FontSize = 12,
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                },
+                IsChecked = selectedSet.Contains(app.Executable),
+                MinHeight = 26,
+                Padding = new Thickness(6, 2, 0, 2),
+                Tag = app.Executable
+            };
+            cb.Checked += AudioAppCheckBox_Changed;
+            cb.Unchecked += AudioAppCheckBox_Changed;
+            Grid.SetColumn(cb, 0);
+            row.Children.Add(cb);
+
+            if (app.IsAudioActive)
+            {
+                var activeBadge = new TextBlock
+                {
+                    Text = "active",
+                    FontSize = 11,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Foreground = (Brush)Application.Current.Resources["SuccessBrush"]
+                };
+                Grid.SetColumn(activeBadge, 1);
+                row.Children.Add(activeBadge);
+            }
+
+            AudioAppsListPanel.Children.Add(row);
+        }
+    }
+
+    private void AudioAppCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _syncingAudioToggles) return;
+        if (sender is not CheckBox cb || cb.Tag is not string exe) return;
+        bool isChecked = cb.IsChecked == true;
+        _settings.SystemAudioApps.RemoveAll(a => string.Equals(a, exe, StringComparison.OrdinalIgnoreCase));
+        if (isChecked) _settings.SystemAudioApps.Add(exe.ToLowerInvariant());
+        CheckDirty();
+    }
+
+    private void AddAudioAppButton_Click(object sender, RoutedEventArgs e) => TryAddCustomAudioApp();
+
+    private void AddAudioAppBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Enter) return;
+        e.Handled = true;
+        TryAddCustomAudioApp();
+    }
+
+    private void TryAddCustomAudioApp()
+    {
+        string raw = (AddAudioAppBox.Text ?? "").Trim().Trim('"');
+        if (raw.Length == 0) return;
+        string name = Path.GetFileName(raw).ToLowerInvariant();
+        if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) name += ".exe";
+        if (!_settings.SystemAudioApps.Any(a => string.Equals(a, name, StringComparison.OrdinalIgnoreCase)))
+            _settings.SystemAudioApps.Add(name);
+        AddAudioAppBox.Text = "";
+        RebuildAudioAppsList();
         CheckDirty();
     }
 
@@ -2971,6 +3263,25 @@ public partial class MainWindow : Window
         if (_initializing || _syncingAudioToggles) return;
         _settings.RecordMicrophone = MicToggle.IsOn;
         CheckDirty();
+    }
+
+    private bool RegisterHotkeyInternal(uint modifiers, uint vk) =>
+        RegisterHotKey(_hwnd, HotkeyId, modifiers | ModNoRepeat, vk) ||
+        RegisterHotKey(_hwnd, HotkeyId, modifiers, vk);
+
+    [DllImport("user32.dll")] private static extern short GetKeyState(int nVirtKey);
+
+    private static bool IsVkDown(int vk) =>
+        ((GetAsyncKeyState(vk) | GetKeyState(vk)) & 0x8000) != 0;
+
+    private static uint GetLiveModifiers()
+    {
+        uint mods = 0;
+        if (IsVkDown(0x11 /* VK_CONTROL */)) mods |= ModControl;
+        if (IsVkDown(0x12 /* VK_MENU */)) mods |= ModAlt;
+        if (IsVkDown(0x10 /* VK_SHIFT */)) mods |= ModShift;
+        if (IsVkDown(0x5B /* VK_LWIN */) || IsVkDown(0x5C /* VK_RWIN */)) mods |= ModWin;
+        return mods;
     }
 
     private void HotkeyCaptureButton_Click(object sender, RoutedEventArgs e)
@@ -2982,16 +3293,19 @@ public partial class MainWindow : Window
     {
         _capturingHotkey = true;
         _pendingHotkeyModifier = 0;
+        UnregisterHotKey(_hwnd, HotkeyId);
         HotkeyCaptureButton.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
         HotkeyCaptureButton.CornerRadius = new CornerRadius(4);
         HotkeyCaptureText.Text = "press a key...";
         HotkeyCaptureButton.Focus(FocusState.Programmatic);
     }
 
-    private void EndHotkeyCapture()
+    private void EndHotkeyCapture(bool restoreHotkey = true)
     {
         _capturingHotkey = false;
         _pendingHotkeyModifier = 0;
+        if (restoreHotkey)
+            RegisterHotkeyInternal(_settings.HotkeyModifiers, _settings.HotkeyVk);
         HotkeyCaptureButton.Style = (Style)Application.Current.Resources["SettingsInputButtonStyle"];
         HotkeyCaptureButton.CornerRadius = new CornerRadius(4);
         UpdateHotkeyButtonDisplay();
@@ -3003,29 +3317,46 @@ public partial class MainWindow : Window
     private void Window_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (!_capturingHotkey) return;
-        var key = e.Key;
-        if (key == VirtualKey.Escape) { e.Handled = true; EndHotkeyCapture(); return; }
+        VirtualKey key = e.Key;
+        if (key == VirtualKey.None || (int)key == 0xE5) key = e.OriginalKey;
+
+        uint liveMods = GetLiveModifiers();
+        if (key == VirtualKey.Escape && liveMods == 0 && _pendingHotkeyModifier == 0)
+        {
+            e.Handled = true;
+            EndHotkeyCapture();
+            return;
+        }
 
         uint? mod = HotkeyDisplay.ModifierBitForKey(key);
         if (mod != null)
         {
-            _pendingHotkeyModifier |= mod.Value;
+            _pendingHotkeyModifier = liveMods | mod.Value;
             HotkeyCaptureText.Text = HotkeyDisplay.Format(_pendingHotkeyModifier, 0);
             e.Handled = true;
             return;
         }
 
+        if (key == VirtualKey.None || (int)key is 0xE5 or 0xE7)
+        {
+            e.Handled = true;
+            return;
+        }
+
         e.Handled = true;
-        FinalizeHotkey(_pendingHotkeyModifier, (uint)key);
+        uint finalMods = liveMods != 0 ? liveMods : _pendingHotkeyModifier;
+        FinalizeHotkey(finalMods, (uint)key);
     }
 
     private void Window_PreviewKeyUp(object sender, KeyRoutedEventArgs e)
     {
-        if (!_capturingHotkey || _pendingHotkeyModifier == 0) return;
-        uint? mod = HotkeyDisplay.ModifierBitForKey(e.Key);
+        if (!_capturingHotkey) return;
+        VirtualKey key = e.Key;
+        if (key == VirtualKey.None || (int)key == 0xE5) key = e.OriginalKey;
+        uint? mod = HotkeyDisplay.ModifierBitForKey(key);
         if (mod != null)
         {
-            _pendingHotkeyModifier &= ~mod.Value;
+            _pendingHotkeyModifier = GetLiveModifiers() & ~mod.Value;
             HotkeyCaptureText.Text = _pendingHotkeyModifier == 0
                 ? "press a key..."
                 : HotkeyDisplay.Format(_pendingHotkeyModifier, 0);
@@ -3039,9 +3370,9 @@ public partial class MainWindow : Window
         uint oldVk = _settings.HotkeyVk;
         UnregisterHotKey(_hwnd, HotkeyId);
 
-        if (!RegisterHotKey(_hwnd, HotkeyId, modifiers, vk))
+        if (!RegisterHotkeyInternal(modifiers, vk))
         {
-            RegisterHotKey(_hwnd, HotkeyId, oldMod, oldVk);
+            RegisterHotkeyInternal(oldMod, oldVk);
             _capturingHotkey = false;
             _pendingHotkeyModifier = 0;
             HotkeyCaptureButton.Style = (Style)Application.Current.Resources["SettingsInputButtonStyle"];
@@ -3056,7 +3387,7 @@ public partial class MainWindow : Window
         _settings.HotkeyModifiers = modifiers;
         _settings.HotkeyVk = vk;
         _settings.SaveFields(nameof(Settings.HotkeyModifiers), nameof(Settings.HotkeyVk));
-        EndHotkeyCapture();
+        EndHotkeyCapture(restoreHotkey: false);
         UpdateHeroSummary();
     }
 
@@ -3264,6 +3595,10 @@ public partial class MainWindow : Window
         _settings.Microphone = prev.Microphone;
         _settings.SaveDestination = prev.SaveDestination;
         _settings.RecordSystemAudio = prev.RecordSystemAudio;
+        _settings.SystemAudioMode = prev.SystemAudioMode;
+        _settings.SystemAudioApps = prev.SystemAudioAppsKey
+            .Split('|', StringSplitOptions.RemoveEmptyEntries)
+            .ToList();
         _settings.RecordMicrophone = prev.RecordMicrophone;
 
         bool wasInit = _initializing;
@@ -3277,8 +3612,7 @@ public partial class MainWindow : Window
                     : _micChoices.FindIndex(1, m => string.Equals(m, _settings.Microphone, StringComparison.OrdinalIgnoreCase));
                 MicCombo.SelectedIndex = idx >= 0 ? idx : 0;
             }
-            MicToggle.IsOn = _settings.RecordMicrophone;
-            SysAudioToggle.IsOn = _settings.RecordSystemAudio;
+            InitAudioToggles();
             InitDurationSegments();
             InitFpsSegments();
             InitQualitySegments();

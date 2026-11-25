@@ -817,17 +817,41 @@
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <local:SettingRow Label="replay duration">
-                                        <ComboBox x:Name="DurationCombo"
-                                                  HorizontalAlignment="Stretch"
-                                                  CornerRadius="4"
-                                                  SelectionChanged="DurationCombo_SelectionChanged">
-                                            <ComboBoxItem Content="30 seconds"/>
-                                            <ComboBoxItem Content="60 seconds"/>
-                                            <ComboBoxItem Content="120 seconds"/>
-                                            <ComboBoxItem Content="180 seconds"/>
-                                            <ComboBoxItem Content="240 seconds"/>
-                                            <ComboBoxItem Content="300 seconds"/>
-                                        </ComboBox>
+                                        <Grid x:Name="DurationRowHost" Width="248" Height="32">
+                                            <ComboBox x:Name="DurationCombo"
+                                                      Width="248"
+                                                      HorizontalAlignment="Left"
+                                                      VerticalAlignment="Center"
+                                                      CornerRadius="4"
+                                                      SelectionChanged="DurationCombo_SelectionChanged">
+                                                <ComboBoxItem Content="30 seconds"/>
+                                                <ComboBoxItem Content="60 seconds"/>
+                                                <ComboBoxItem Content="120 seconds"/>
+                                                <ComboBoxItem Content="custom"/>
+                                            </ComboBox>
+                                            <Grid x:Name="DurationCustomWrap"
+                                                  Width="96"
+                                                  HorizontalAlignment="Right"
+                                                  VerticalAlignment="Center"
+                                                  Visibility="Collapsed">
+                                                <TextBox x:Name="DurationCustomBox"
+                                                         Height="32"
+                                                         Padding="10,0,22,0"
+                                                         CornerRadius="4"
+                                                         PlaceholderText="60"
+                                                         InputScope="Number"
+                                                         VerticalContentAlignment="Center"
+                                                         TextChanged="DurationCustomBox_TextChanged"
+                                                         LostFocus="DurationCustomBox_LostFocus"/>
+                                                <TextBlock Text="s"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource TextTertiaryBrush}"
+                                                           HorizontalAlignment="Right"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,9,0"
+                                                           IsHitTestVisible="False"/>
+                                            </Grid>
+                                        </Grid>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
@@ -853,7 +877,6 @@
                                             <ComboBoxItem Content="low"/>
                                             <ComboBoxItem Content="balanced"/>
                                             <ComboBoxItem Content="high"/>
-                                            <ComboBoxItem Content="ultra"/>
                                         </ComboBox>
                                     </local:SettingRow>
                                 </StackPanel>
@@ -947,6 +970,75 @@
                                                       OffContent=""
                                                       Toggled="SysAudioToggle_Changed"/>
                                     </local:SettingRow>
+
+                                    <StackPanel x:Name="SystemAudioSourceSection" Visibility="Visible">
+                                        <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
+
+                                        <local:SettingRow Label="system audio source">
+                                            <ComboBox x:Name="SysAudioModeCombo"
+                                                      HorizontalAlignment="Stretch"
+                                                      CornerRadius="4"
+                                                      SelectionChanged="SysAudioModeCombo_SelectionChanged">
+                                                <ComboBoxItem Content="all desktop audio"/>
+                                                <ComboBoxItem Content="selected apps only"/>
+                                            </ComboBox>
+                                        </local:SettingRow>
+
+                                        <Border x:Name="SelectedAudioAppsPanel"
+                                                Visibility="Collapsed"
+                                                Background="{ThemeResource CardSecondaryBrush}"
+                                                BorderBrush="{ThemeResource HairlineBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="12,10"
+                                                Margin="0,2,0,12">
+                                            <StackPanel Spacing="8">
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="recorded applications"
+                                                               FontSize="12"
+                                                               Foreground="{ThemeResource TextSecondaryBrush}"
+                                                               VerticalAlignment="Center"/>
+                                                    <Button x:Name="RefreshAudioAppsButton"
+                                                            Grid.Column="1"
+                                                            Style="{StaticResource BaseButtonStyle}"
+                                                            Height="26"
+                                                            MinHeight="26"
+                                                            Padding="10,0"
+                                                            CornerRadius="4"
+                                                            FontSize="11.5"
+                                                            Content="refresh"
+                                                            Click="RefreshAudioAppsButton_Click"/>
+                                                </Grid>
+                                                <StackPanel x:Name="AudioAppsListPanel" Spacing="4"/>
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBox x:Name="AddAudioAppBox"
+                                                             Height="30"
+                                                             CornerRadius="4"
+                                                             PlaceholderText="add app (e.g. csgo.exe, discord.exe)"
+                                                             VerticalContentAlignment="Center"
+                                                             KeyDown="AddAudioAppBox_KeyDown"/>
+                                                    <Button x:Name="AddAudioAppButton"
+                                                            Grid.Column="1"
+                                                            Style="{StaticResource BaseButtonStyle}"
+                                                            Height="30"
+                                                            MinHeight="30"
+                                                            Padding="12,0"
+                                                            CornerRadius="4"
+                                                            FontSize="12"
+                                                            Content="add"
+                                                            Click="AddAudioAppButton_Click"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -1143,7 +1235,7 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                             <TextBlock x:Name="UpdateVersionText"
-                                                       Text="version 1.0.2"
+                                                       Text="version 1.0.3"
                                                        FontSize="13.5"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="UpdateStatusText"

@@ -107,6 +107,8 @@ public sealed class Settings
     public int ReplayDurationSeconds { get; set; } = 60;
     public int FrameRate { get; set; } = 60;
     public bool RecordSystemAudio { get; set; } = true;
+    public string SystemAudioMode { get; set; } = "All";
+    public List<string> SystemAudioApps { get; set; } = [];
     public bool RecordMicrophone { get; set; } = true;
     public bool DebugLogging { get; set; } = false;
     public bool DarkMode { get; set; } = true;
@@ -154,8 +156,24 @@ public sealed class Settings
                     if (loaded.CaptureTarget is "Window" or "ActiveWindow") loaded.CaptureTarget = "SpecificWindows";
                     loaded.SpecificWindows ??= [];
                     if (loaded.FrameRate is not (30 or 60 or 120)) loaded.FrameRate = 60;
-                    if (loaded.ReplayDurationSeconds is not (30 or 60 or 120 or 180 or 240 or 300)) loaded.ReplayDurationSeconds = 60;
-                    if (loaded.QualityPreset is not ("Low" or "Balanced" or "High" or "Quality" or "Ultra")) loaded.QualityPreset = "Balanced";
+                    loaded.ReplayDurationSeconds = loaded.ReplayDurationSeconds <= 0
+                        ? 60
+                        : Math.Clamp(loaded.ReplayDurationSeconds, 5, 600);
+                    loaded.QualityPreset = loaded.QualityPreset switch
+                    {
+                        "Low" => "Low",
+                        "Balanced" => "Balanced",
+                        "High" or "Quality" or "Ultra" => "High",
+                        _ => "Balanced"
+                    };
+                    loaded.SystemAudioMode = string.Equals(loaded.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase)
+                        ? "SelectedApps"
+                        : "All";
+                    loaded.SystemAudioApps = (loaded.SystemAudioApps ?? [])
+                        .Select(a => a?.Trim().ToLowerInvariant() ?? "")
+                        .Where(a => !string.IsNullOrEmpty(a))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
                     loaded.CaptureBorder = false;
                     return loaded;
                 }
@@ -307,8 +325,7 @@ public readonly record struct VideoQualityProfile(string Name, int BitrateKbps, 
     {
         var (name, at60Fps) = preset switch
         {
-            "Ultra" => ("ultra", 18000),
-            "Quality" or "High" => ("high", 9000),
+            "Quality" or "High" or "Ultra" => ("high", 9000),
             "Balanced" => ("balanced", 6000),
             _ => ("low", 4000)
         };
@@ -488,6 +505,9 @@ public sealed class RecorderEngine : IDisposable
 
     private bool StartNative(IntPtr window)
     {
+        bool customAudioApps = _captureSettings.RecordSystemAudio
+            && string.Equals(_captureSettings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase)
+            && _captureSettings.SystemAudioApps.Count > 0;
         var quality = VideoQualityProfile.FromPreset(_captureSettings.QualityPreset, _captureSettings.FrameRate);
         bool ok = _engine.StartBuffering(
             monitorIndex: _captureSettings.CaptureMonitorIndex,
@@ -500,8 +520,9 @@ public sealed class RecorderEngine : IDisposable
             captureMic: _captureSettings.RecordMicrophone,
             micDevice: _captureSettings.Microphone,
             targetWindow: window,
-            captureOptions: (uint)((_captureSettings.CaptureClientArea ? 1 : 0) | (_captureSettings.CaptureCursor ? 2 : 0) | (!_specific && _captureSettings.CaptureRoundedCorners ? 8 : 0) | (_captureSettings.CaptureSecondaryWindows ? 16 : 0) | (_specific ? 64 : 0)),
-            outputWidthCap: quality.MaxWidth, outputHeightCap: quality.MaxHeight);
+            captureOptions: (uint)((_captureSettings.CaptureClientArea ? 1 : 0) | (_captureSettings.CaptureCursor ? 2 : 0) | (!_specific && _captureSettings.CaptureRoundedCorners ? 8 : 0) | (_captureSettings.CaptureSecondaryWindows ? 16 : 0) | (_specific && !customAudioApps ? 64 : 0)),
+            outputWidthCap: quality.MaxWidth, outputHeightCap: quality.MaxHeight,
+            systemAudioApps: customAudioApps ? _captureSettings.SystemAudioApps.ToArray() : null);
 
         if (!ok)
         {
@@ -541,6 +562,31 @@ public sealed class RecorderEngine : IDisposable
             {
                 _candidate = IntPtr.Zero;
                 _pendingSurface = null;
+                if (_target != null && GameDetector.IsAlive(_target))
+                {
+                    if (GameDetector.IsMinimized(_target))
+                    {
+                        if (!_paused) _engine.SetPaused(true);
+                        _paused = true;
+                        _targetState = "paused";
+                        return;
+                    }
+                    // Keep recording the game window even when alt-tabbed (WGC captures occluded windows).
+                    _engine.GetStatus(out bool runAlt, out _, out _, out long framesAlt, out _, out bool errAlt, out _, out _, out _, out _);
+                    if (!runAlt || errAlt || (!_paused && framesAlt == 0 && DateTime.UtcNow - _startedAt > TimeSpan.FromSeconds(8)))
+                    {
+                        _engine.StopBuffering();
+                        _target = null;
+                        _paused = true;
+                        _targetState = "capture unavailable";
+                        _retryAt = DateTime.UtcNow.AddSeconds(5);
+                        return;
+                    }
+                    if (_paused) _engine.SetPaused(false);
+                    _paused = false;
+                    _targetState = "recording";
+                    return;
+                }
                 if (!_paused) _engine.SetPaused(true);
                 _paused = true;
                 _targetState = _target == null ? "waiting for game" : "paused";
@@ -600,7 +646,23 @@ public sealed class RecorderEngine : IDisposable
                 return;
             }
             var current = _detector.Foreground();
-            if (current?.Handle != foreground.Handle || current.ProcessId != foreground.ProcessId || current.Surface != foreground.Surface)
+            if (current == null)
+            {
+                if (_target != null && GameDetector.IsAlive(_target) && !GameDetector.IsMinimized(_target))
+                {
+                    if (_paused) _engine.SetPaused(false);
+                    _paused = false;
+                    _targetState = "recording";
+                    return;
+                }
+                _engine.SetPaused(true);
+                _paused = true;
+                _candidate = IntPtr.Zero;
+                _pendingSurface = null;
+                _targetState = "paused";
+                return;
+            }
+            if (current.Handle != foreground.Handle || current.ProcessId != foreground.ProcessId || current.Surface != foreground.Surface)
             {
                 _engine.SetPaused(true);
                 _paused = true;
@@ -851,6 +913,9 @@ internal static class IrNative
     internal static extern int IR_SetCaptureTarget(IntPtr engine, IntPtr window, uint options);
 
     [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int IR_SetAudioApps(IntPtr engine, [MarshalAs(UnmanagedType.LPWStr)] string? appsList);
+
+    [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
     internal static extern int IR_SetPaused(IntPtr engine, int paused);
 
     [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
@@ -982,7 +1047,7 @@ public sealed class ReplayEngine : IDisposable
     public bool StartBuffering(int monitorIndex, int ringSeconds, int fps, int bitrateKbps,
         bool captureAudio, EncoderPreference preference, CaptureMethod method = CaptureMethod.Wgc,
         bool captureMic = false, string? micDevice = null, IntPtr targetWindow = default, uint captureOptions = 11,
-        int outputWidthCap = 3840, int outputHeightCap = 2160)
+        int outputWidthCap = 3840, int outputHeightCap = 2160, string[]? systemAudioApps = null)
     {
         lock (_opLock)
         {
@@ -1003,6 +1068,10 @@ public sealed class ReplayEngine : IDisposable
                 Logger.Error("capture target unavailable.");
                 return false;
             }
+            string audioAppsSpec = (systemAudioApps != null && systemAudioApps.Length > 0)
+                ? string.Join("|", systemAudioApps)
+                : "";
+            IrNative.IR_SetAudioApps(_engine, audioAppsSpec);
             if (method == CaptureMethod.Dxgi && IrNative.IR_DxgiDuplicationSupported() == 0)
             {
                 _hasError = true;
