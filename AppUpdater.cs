@@ -155,7 +155,7 @@ public static class AppUpdater
         Process.Start(new ProcessStartInfo
         {
             FileName = installerPath,
-            Arguments = "--update",
+            Arguments = "/SP- /SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS --update",
             UseShellExecute = true,
         });
     }

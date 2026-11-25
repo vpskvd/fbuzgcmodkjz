@@ -424,7 +424,7 @@ body.editing .close-btn {
 #cropBox {
   position: absolute;
   box-sizing: border-box;
-  border: 1.5px solid rgba(236, 240, 246, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.82);
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.58);
   cursor: move;
   touch-action: none;
@@ -434,7 +434,7 @@ body.editing .close-btn {
 .crop-grid-h {
   position: absolute;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .crop-grid-v {
@@ -457,15 +457,15 @@ body.editing .close-btn {
 
 #cropTag {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 10px;
+  left: 10px;
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
   border-radius: 4px;
-  background: rgba(18, 21, 26, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #f0f2f6;
+  background: rgba(16, 18, 22, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #f2f4f8;
   font-size: 11px;
   line-height: 1;
   font-weight: 600;
@@ -476,24 +476,94 @@ body.editing .close-btn {
 
 .crop-handle {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: #f2f4f8;
-  border: 1.5px solid #14161b;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   touch-action: none;
+  background: transparent;
+}
+
+.crop-handle::before {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.82));
+}
+
+.h-nw, .h-ne, .h-se, .h-sw {
+  width: 22px;
+  height: 22px;
 }
 
 .h-nw { left: -1px; top: -1px; cursor: nwse-resize; }
-.h-ne { right: -1px; top: -1px; cursor: nesw-resize; }
-.h-se { right: -1px; bottom: -1px; cursor: nwse-resize; }
-.h-sw { left: -1px; bottom: -1px; cursor: nesw-resize; }
+.h-nw::before {
+  left: 0; top: 0; width: 14px; height: 14px;
+  border-top: 3px solid #ffffff;
+  border-left: 3px solid #ffffff;
+  border-top-left-radius: 2px;
+}
 
-.h-n { left: 50%; top: -1px; width: 24px; height: 7px; margin-left: -12px; cursor: ns-resize; }
-.h-s { left: 50%; bottom: -1px; width: 24px; height: 7px; margin-left: -12px; cursor: ns-resize; }
-.h-w { left: -1px; top: 50%; width: 7px; height: 24px; margin-top: -12px; cursor: ew-resize; }
-.h-e { right: -1px; top: 50%; width: 7px; height: 24px; margin-top: -12px; cursor: ew-resize; }
+.h-ne { right: -1px; top: -1px; cursor: nesw-resize; }
+.h-ne::before {
+  right: 0; top: 0; width: 14px; height: 14px;
+  border-top: 3px solid #ffffff;
+  border-right: 3px solid #ffffff;
+  border-top-right-radius: 2px;
+}
+
+.h-se { right: -1px; bottom: -1px; cursor: nwse-resize; }
+.h-se::before {
+  right: 0; bottom: 0; width: 14px; height: 14px;
+  border-bottom: 3px solid #ffffff;
+  border-right: 3px solid #ffffff;
+  border-bottom-right-radius: 2px;
+}
+
+.h-sw { left: -1px; bottom: -1px; cursor: nesw-resize; }
+.h-sw::before {
+  left: 0; bottom: 0; width: 14px; height: 14px;
+  border-bottom: 3px solid #ffffff;
+  border-left: 3px solid #ffffff;
+  border-bottom-left-radius: 2px;
+}
+
+.h-n, .h-s {
+  left: 50%;
+  width: 34px;
+  height: 14px;
+  margin-left: -17px;
+  cursor: ns-resize;
+}
+.h-n { top: -1px; }
+.h-s { bottom: -1px; }
+.h-n::before, .h-s::before {
+  left: 50%;
+  width: 22px;
+  height: 3px;
+  margin-left: -11px;
+  background: #ffffff;
+  border-radius: 999px;
+}
+.h-n::before { top: 0; }
+.h-s::before { bottom: 0; }
+
+.h-w, .h-e {
+  top: 50%;
+  width: 14px;
+  height: 34px;
+  margin-top: -17px;
+  cursor: ew-resize;
+}
+.h-w { left: -1px; }
+.h-e { right: -1px; }
+.h-w::before, .h-e::before {
+  top: 50%;
+  width: 3px;
+  height: 22px;
+  margin-top: -11px;
+  background: #ffffff;
+  border-radius: 999px;
+}
+.h-w::before { left: 0; }
+.h-e::before { right: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   #icWaveLow,

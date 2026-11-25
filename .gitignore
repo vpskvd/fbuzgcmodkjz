@@ -7,5 +7,3 @@ dist/
 *.suo
 .vs/
 engine/rust/target/
-installer/setup/target/
-installer/setup/payload.zip

@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr hWnd);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr hIcon);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr SendMessageW(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] private static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterWindowMessage(string lpString);
@@ -160,10 +161,12 @@ public partial class MainWindow : Window
 
     private TaskbarBadge? _taskbarBadge;
     private BadgeKind _badgeKind = BadgeKind.None;
-    private IntPtr _badgeIcon;
+    private IntPtr _taskbarBigIcon;
+    private IntPtr _taskbarSmallIcon;
     private IntPtr _trayBadgeIcon;
     private bool _hasErrored;
     private int _filterAnimGen;
+    private long _suppressCardEntranceUntilMs;
     private bool _checkingUpdate;
     private bool _downloadingUpdate;
     private UpdateCheckResult? _availableUpdate;
@@ -1123,30 +1126,58 @@ public partial class MainWindow : Window
             if (kind != _badgeKind)
             {
                 _badgeKind = kind;
-                IntPtr prevBadge = _badgeIcon;
+                IntPtr prevBig = _taskbarBigIcon;
+                IntPtr prevSmall = _taskbarSmallIcon;
                 IntPtr prevTray = _trayBadgeIcon;
-                _badgeIcon = kind != BadgeKind.None ? BadgeGlyphs.CreateOverlayIcon(kind, 32) : IntPtr.Zero;
-                _trayBadgeIcon = kind != BadgeKind.None ? BadgeGlyphs.CreateBadgeIcon(kind, 32) : IntPtr.Zero;
+
+                if (kind == BadgeKind.None)
+                {
+                    _taskbarBigIcon = BadgeGlyphs.LoadAppIcon(48);
+                    _taskbarSmallIcon = BadgeGlyphs.LoadAppIcon(24);
+                    _trayBadgeIcon = IntPtr.Zero;
+                }
+                else
+                {
+                    _taskbarBigIcon = BadgeGlyphs.CreateBadgeIcon(kind, 48);
+                    _taskbarSmallIcon = BadgeGlyphs.CreateBadgeIcon(kind, 24);
+                    _trayBadgeIcon = BadgeGlyphs.CreateBadgeIcon(kind, 32);
+                }
 
                 _trayIcon?.SetIcon(_trayBadgeIcon);
-                if (kind == BadgeKind.None) _taskbarBadge?.Clear();
-                else _taskbarBadge?.SetOverlay(_badgeIcon, kind);
+                _taskbarBadge?.Clear();
+                ApplyTaskbarIcons();
 
-                if (prevBadge != IntPtr.Zero) DestroyIcon(prevBadge);
+                if (prevBig != IntPtr.Zero) DestroyIcon(prevBig);
+                if (prevSmall != IntPtr.Zero) DestroyIcon(prevSmall);
                 if (prevTray != IntPtr.Zero) DestroyIcon(prevTray);
             }
             else
             {
-                if (kind == BadgeKind.None) _taskbarBadge?.Clear();
-                else _taskbarBadge?.SetOverlay(_badgeIcon, kind);
+                _taskbarBadge?.Clear();
+                ApplyTaskbarIcons();
             }
         }
         catch { }
     }
 
+    private void ApplyTaskbarIcons()
+    {
+        const uint WmSetIcon = 0x0080;
+        if (_taskbarBigIcon != IntPtr.Zero)
+        {
+            try { _appWindow.SetTaskbarIcon(Win32Interop.GetIconIdFromIcon(_taskbarBigIcon)); } catch { }
+            SendMessageW(_hwnd, WmSetIcon, (IntPtr)1, _taskbarBigIcon);
+        }
+        if (_taskbarSmallIcon != IntPtr.Zero)
+        {
+            SendMessageW(_hwnd, WmSetIcon, (IntPtr)0, _taskbarSmallIcon);
+        }
+    }
+
     private void ReleaseBadgeIcons()
     {
-        if (_badgeIcon != IntPtr.Zero) { DestroyIcon(_badgeIcon); _badgeIcon = IntPtr.Zero; }
+        if (_taskbarBigIcon != IntPtr.Zero) { DestroyIcon(_taskbarBigIcon); _taskbarBigIcon = IntPtr.Zero; }
+        if (_taskbarSmallIcon != IntPtr.Zero) { DestroyIcon(_taskbarSmallIcon); _taskbarSmallIcon = IntPtr.Zero; }
         if (_trayBadgeIcon != IntPtr.Zero) { DestroyIcon(_trayBadgeIcon); _trayBadgeIcon = IntPtr.Zero; }
     }
 
@@ -1373,13 +1404,42 @@ public partial class MainWindow : Window
 
     private void RebuildCategoryFilterPills()
     {
-        CategoryFilterBar.Children.Clear();
         var filters = _library.GetCategoryFilters();
         string active = _library.ActiveFilter;
-
         var activeStyle = (Style)Application.Current.Resources["FilterActiveButtonStyle"];
         var baseStyle = (Style)Application.Current.Resources["BaseButtonStyle"];
 
+        bool structureMatches = CategoryFilterBar.Children.Count == filters.Count;
+        if (structureMatches)
+        {
+            for (int i = 0; i < filters.Count; i++)
+            {
+                if (CategoryFilterBar.Children[i] is not Button b ||
+                    b.Tag is not string tag ||
+                    !string.Equals(tag, filters[i].Name, StringComparison.OrdinalIgnoreCase) ||
+                    b.Content is not TextBlock tb ||
+                    !string.Equals(tb.Text, filters[i].Label, StringComparison.Ordinal))
+                {
+                    structureMatches = false;
+                    break;
+                }
+            }
+        }
+
+        if (structureMatches)
+        {
+            for (int i = 0; i < filters.Count; i++)
+            {
+                var btn = (Button)CategoryFilterBar.Children[i];
+                bool isSelected = string.Equals(filters[i].Name, active, StringComparison.OrdinalIgnoreCase);
+                btn.Style = isSelected ? activeStyle : baseStyle;
+                if (btn.Content is TextBlock tb)
+                    tb.FontWeight = isSelected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Medium;
+            }
+            return;
+        }
+
+        CategoryFilterBar.Children.Clear();
         foreach (var f in filters)
         {
             bool isSelected = string.Equals(f.Name, active, StringComparison.OrdinalIgnoreCase);
@@ -1412,33 +1472,52 @@ public partial class MainWindow : Window
             return;
 
         int gen = ++_filterAnimGen;
+        _suppressCardEntranceUntilMs = Environment.TickCount64 + 600;
         try
         {
             var compositor = CompositionTarget.GetCompositorForCurrentThread();
-            var easeOut = compositor.CreateCubicBezierEasingFunction(new Vector2(0.4f, 0f), new Vector2(1f, 1f));
+            var easeOut = compositor.CreateCubicBezierEasingFunction(new Vector2(0.4f, 0f), new Vector2(0.8f, 1f));
             Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(GalleryGrid, true);
             var vis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(GalleryGrid);
 
             var opOut = compositor.CreateScalarKeyFrameAnimation();
             opOut.InsertKeyFrame(0f, vis.Opacity);
             opOut.InsertKeyFrame(1f, 0f, easeOut);
-            opOut.Duration = TimeSpan.FromMilliseconds(95);
+            opOut.Duration = TimeSpan.FromMilliseconds(130);
 
             var trOut = compositor.CreateVector3KeyFrameAnimation();
             trOut.InsertKeyFrame(0f, Vector3.Zero);
-            trOut.InsertKeyFrame(1f, new Vector3(0f, 8f, 0f), easeOut);
-            trOut.Duration = TimeSpan.FromMilliseconds(95);
+            trOut.InsertKeyFrame(1f, new Vector3(0f, 6f, 0f), easeOut);
+            trOut.Duration = TimeSpan.FromMilliseconds(130);
 
             vis.StartAnimation("Opacity", opOut);
             vis.StartAnimation("Translation", trOut);
         }
         catch { }
 
-        await Task.Delay(95);
+        await Task.Delay(135);
         if (gen != _filterAnimGen) return;
+
+        try
+        {
+            var vis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(GalleryGrid);
+            vis.StopAnimation("Opacity");
+            vis.StopAnimation("Translation");
+            vis.Opacity = 0f;
+            vis.Properties.InsertVector3("Translation", new Vector3(0f, 10f, 0f));
+        }
+        catch { }
 
         _library.SetFilter(filterName);
         UpdateGalleryChrome();
+        GalleryGrid.UpdateLayout();
+
+        // Wait one UI frame so newly realized/recycled cards settle while hidden at Opacity=0.
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _dq.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => tcs.TrySetResult());
+        await tcs.Task;
+        if (gen != _filterAnimGen) return;
+
         AnimateGalleryFilterTransition();
     }
 
@@ -1476,12 +1555,24 @@ public partial class MainWindow : Window
     {
         if (args.ItemContainer is not GridViewItem card) return;
 
-        if (args.Phase == 0 && args.ItemIndex < 15)
+        if (args.Phase == 0)
         {
             try
             {
-                int delayMs = Math.Min(args.ItemIndex, 11) * 28;
-                StartTranslationEntrance(card, new Vector3(0f, 14f, 0f), delayMs: delayMs, durationMs: 320);
+                if (Environment.TickCount64 < _suppressCardEntranceUntilMs)
+                {
+                    var vis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(card);
+                    vis.StopAnimation("Opacity");
+                    vis.StopAnimation("Translation");
+                    vis.Opacity = 1f;
+                    Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(card, true);
+                    vis.Properties.InsertVector3("Translation", Vector3.Zero);
+                }
+                else if (args.ItemIndex < 15)
+                {
+                    int delayMs = Math.Min(args.ItemIndex, 11) * 24;
+                    StartTranslationEntrance(card, new Vector3(0f, 12f, 0f), delayMs: delayMs, durationMs: 280);
+                }
             }
             catch { }
         }
@@ -1505,12 +1596,12 @@ public partial class MainWindow : Window
             var op = compositor.CreateScalarKeyFrameAnimation();
             op.InsertKeyFrame(0f, 0f);
             op.InsertKeyFrame(1f, 1f, ease);
-            op.Duration = TimeSpan.FromMilliseconds(320);
+            op.Duration = TimeSpan.FromMilliseconds(260);
 
             var tr = compositor.CreateVector3KeyFrameAnimation();
-            tr.InsertKeyFrame(0f, new Vector3(0f, 14f, 0f));
+            tr.InsertKeyFrame(0f, new Vector3(0f, 10f, 0f));
             tr.InsertKeyFrame(1f, Vector3.Zero, ease);
-            tr.Duration = TimeSpan.FromMilliseconds(340);
+            tr.Duration = TimeSpan.FromMilliseconds(280);
 
             vis.StartAnimation("Opacity", op);
             vis.StartAnimation("Translation", tr);

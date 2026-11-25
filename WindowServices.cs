@@ -531,7 +531,7 @@ public static class BadgeGlyphs
         try
         {
             if (!TryReadIconBgra(appIcon, size, out byte[] baseBgra)) return IntPtr.Zero;
-            int badgeSize = Math.Max(10, (int)Math.Round(size * 0.42));
+            int badgeSize = Math.Max(11, (int)Math.Round(size * 0.46));
             var badge = new byte[badgeSize * badgeSize * 4];
             DrawStatusEmblem(badge, badgeSize, kind, fillFraction: 0.94);
             OverlayBgra(baseBgra, size, badge, badgeSize, size - badgeSize, size - badgeSize);

@@ -498,6 +498,9 @@
                                       ItemClick="GalleryGrid_ItemClick"
                                       ScrollViewer.VerticalScrollMode="Disabled"
                                       ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <GridView.ItemContainerTransitions>
+                                    <TransitionCollection/>
+                                </GridView.ItemContainerTransitions>
                                 <GridView.ItemTemplate>
                                     <DataTemplate x:DataType="local:ReplayItem">
                                         <Border x:Name="CardRoot"
@@ -1118,7 +1121,7 @@
                         <!-- 7. UPDATES -->
                         <StackPanel Spacing="8">
                             <TextBlock Text="updates" Style="{StaticResource SettingGroupHeader}"/>
-                            <Border Style="{StaticResource SettingsCard}" Padding="16,12,16,0">
+                            <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <local:SettingRow Label="check automatically">
                                         <ToggleSwitch x:Name="AutoUpdateToggle"
@@ -1131,7 +1134,7 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <Grid MinHeight="52" Padding="0,10" ColumnSpacing="12">
+                                    <Grid MinHeight="52" Padding="0,8" ColumnSpacing="12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>

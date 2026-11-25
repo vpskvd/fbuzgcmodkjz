@@ -35,35 +35,24 @@ if (Test-Path (Join-Path $root "build")) {
 dotnet publish (Join-Path $root "Replay.csproj") -c Release -p:Platform=x64 -o (Join-Path $root "build")
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 
-# 4. Pack compressed payload.zip and build native Setup.exe
-$payloadZip = Join-Path $root "installer\setup\payload.zip"
-if (Test-Path $payloadZip) { Remove-Item $payloadZip -Force }
-
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::CreateFromDirectory(
-    (Join-Path $root "build"),
-    $payloadZip,
-    [System.IO.Compression.CompressionLevel]::Optimal,
-    $false
-)
-
+# 4. Build standard Inno Setup installer
 $distDir = Join-Path $root "dist"
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$env:IR_PAYLOAD_ZIP = $payloadZip
-Push-Location (Join-Path $root "installer\setup")
-try {
-    cargo build --release
-    if ($LASTEXITCODE -ne 0) { throw "setup cargo build failed" }
-}
-finally {
-    Pop-Location
-    Remove-Item Env:IR_PAYLOAD_ZIP -ErrorAction SilentlyContinue
+$isccCandidates = @(
+    (Get-Command iscc -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe"),
+    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+    "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+) | Where-Object { $_ -and (Test-Path $_) }
+
+$iscc = $isccCandidates | Select-Object -First 1
+if (-not $iscc) {
+    throw "Inno Setup 6 (ISCC.exe) is required to build the installer (winget install JRSoftware.InnoSetup)."
 }
 
-$setupSrc = Join-Path $root "installer\setup\target\release\InstantReplaySetup.exe"
+& $iscc (Join-Path $root "installer\InstantReplay.iss")
+if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+
 $setupOut = Join-Path $distDir "InstantReplaySetup.exe"
-Copy-Item $setupSrc $setupOut -Force
-Remove-Item $payloadZip -Force -ErrorAction SilentlyContinue
-
 Write-Host "Built setup: $setupOut ($((Get-Item $setupOut).Length) bytes)"
