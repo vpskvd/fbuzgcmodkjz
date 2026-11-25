@@ -1,0 +1,11 @@
+bin/
+obj/
+build/
+dist/
+*.tmp
+*.user
+*.suo
+.vs/
+engine/rust/target/
+installer/setup/target/
+installer/setup/payload.zip

@@ -1,0 +1,510 @@
+:root {
+  --accent: #d0d5df;
+  --bar-h: 44px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  text-transform: lowercase;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.fullscreen,
+body.video-ready {
+  background: #000;
+}
+
+video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  object-fit: contain;
+  cursor: default;
+  outline: none;
+}
+
+body.fullscreen video,
+body.video-ready video {
+  background: #000;
+}
+
+body.idle,
+body.idle video {
+  cursor: none;
+}
+
+/* Hidden scrim when idle / clean solid controls */
+#barScrim {
+  display: none;
+}
+
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  outline: none;
+  border-radius: 4px;
+  background: rgba(24, 27, 33, 0.94);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.36);
+  transition: background-color 140ms cubic-bezier(0.22, 1, 0.36, 1), border-color 140ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.close-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.close-btn:active {
+  background: rgba(255, 255, 255, 0.09);
+  transform: scale(0.96);
+}
+
+.close-btn svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+#center {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#center .big,
+#center #error {
+  pointer-events: auto;
+}
+
+/* Solid Floating Center Play / Replay Button */
+.big {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(24, 27, 33, 0.94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+  color: #f0f2f6;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: background-color 140ms cubic-bezier(0.22, 1, 0.36, 1), border-color 140ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#bigPlay {
+  padding-left: 4px;
+}
+
+.big svg {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.35));
+}
+
+.big svg path {
+  fill: currentColor;
+}
+
+.big[hidden] {
+  display: none;
+}
+
+body.paused .big {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.big:hover {
+  background: rgba(34, 38, 46, 0.98);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.big:active {
+  transform: scale(0.94);
+  opacity: 0.9;
+}
+
+#error {
+  text-align: center;
+  color: #f0f2f6;
+  padding: 20px 28px;
+  border-radius: 8px;
+  background: rgba(24, 27, 33, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  max-width: 80%;
+}
+
+#error p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  opacity: 0.94;
+}
+
+#retry {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  outline: none;
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #f0f2f6;
+  background: #2b303b;
+}
+
+#retry:hover {
+  background: #353b48;
+}
+
+/* Solid Floating Playback Bar (zero blur, clean dark neutral) */
+#bar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3;
+  height: var(--bar-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: rgba(22, 25, 31, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.36);
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  animation: barEnter 260ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+@keyframes barEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+body.idle #bar {
+  opacity: 0;
+  transform: translateY(14px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 280ms cubic-bezier(0.4, 0, 1, 1), transform 320ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+body.idle .close-btn {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity 260ms cubic-bezier(0.4, 0, 1, 1), transform 280ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.btn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: none;
+  outline: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #f2f4f8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 120ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.btn:active {
+  background: rgba(255, 255, 255, 0.07);
+  transform: scale(0.95);
+}
+
+.btn:focus,
+.big:focus,
+#retry:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.btn:focus-visible,
+.big:focus-visible,
+#retry:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1.5px rgba(208, 213, 223, 0.45);
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn svg path {
+  fill: currentColor;
+}
+
+svg.stroke-ic path,
+svg.stroke-ic polyline,
+svg.stroke-ic line,
+svg.stroke-ic polygon,
+svg.stroke-ic rect,
+svg.stroke-ic circle {
+  fill: none !important;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.time {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
+  min-width: 40px;
+  text-align: center;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+  outline: none;
+  cursor: pointer;
+  touch-action: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e8ecf2;
+  border: 1.5px solid #16181d;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+input[type="range"]:hover::-webkit-slider-thumb,
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.16);
+}
+
+#seek {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+#vol {
+  flex: 0 0 88px;
+}
+
+body.inline .close-btn {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  #vol {
+    flex: 0 0 54px;
+  }
+  #bar {
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
+  .time {
+    min-width: 32px;
+  }
+}
+
+body.inline {
+  border-radius: 8px;
+  overflow: hidden;
+  background: transparent;
+  clip-path: inset(0 round 8px);
+}
+
+body.fullscreen .close-btn {
+  width: auto;
+  padding: 0 12px;
+  gap: 8px;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+html:has(body.inline) {
+  background: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+body.inline video {
+  border-radius: 8px;
+  clip-path: inset(0 round 8px);
+}
+
+#icWaveLow,
+#icWaveHigh,
+#icMuted {
+  transition: opacity 120ms linear;
+}
+
+/* ================= CROP EDITOR OVERLAY ================= */
+body.editing #bar,
+body.editing #center,
+body.editing .close-btn {
+  display: none !important;
+}
+
+#cropLayer {
+  position: absolute;
+  z-index: 5;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+#cropLayer[hidden] {
+  display: none;
+}
+
+#cropBox {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid rgba(236, 240, 246, 0.94);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.58);
+  cursor: move;
+  touch-action: none;
+}
+
+.crop-grid-v,
+.crop-grid-h {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.crop-grid-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.crop-grid-v.g1 { left: 33.3333%; }
+.crop-grid-v.g2 { left: 66.6667%; }
+
+.crop-grid-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.crop-grid-h.g1 { top: 33.3333%; }
+.crop-grid-h.g2 { top: 66.6667%; }
+
+#cropTag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(18, 21, 26, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f0f2f6;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  letter-spacing: 0.02em;
+}
+
+.crop-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #f2f4f8;
+  border: 1.5px solid #14161b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+}
+
+.h-nw { left: -1px; top: -1px; cursor: nwse-resize; }
+.h-ne { right: -1px; top: -1px; cursor: nesw-resize; }
+.h-se { right: -1px; bottom: -1px; cursor: nwse-resize; }
+.h-sw { left: -1px; bottom: -1px; cursor: nesw-resize; }
+
+.h-n { left: 50%; top: -1px; width: 24px; height: 7px; margin-left: -12px; cursor: ns-resize; }
+.h-s { left: 50%; bottom: -1px; width: 24px; height: 7px; margin-left: -12px; cursor: ns-resize; }
+.h-w { left: -1px; top: 50%; width: 7px; height: 24px; margin-top: -12px; cursor: ew-resize; }
+.h-e { right: -1px; top: 50%; width: 7px; height: 24px; margin-top: -12px; cursor: ew-resize; }
+
+@media (prefers-reduced-motion: reduce) {
+  #icWaveLow,
+  #icWaveHigh,
+  #icMuted,
+  #bar,
+  #barScrim,
+  .close-btn,
+  .big,
+  .btn {
+    animation: none;
+    transition: none;
+  }
+}

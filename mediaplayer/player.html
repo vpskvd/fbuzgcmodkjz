@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>instant replay</title>
+  <link rel="stylesheet" href="player.css" />
+</head>
+
+<body>
+  <video id="v" playsinline preload="auto"></video>
+
+  <div id="cropLayer" hidden aria-hidden="true">
+    <div id="cropBox">
+      <div class="crop-grid-v g1"></div>
+      <div class="crop-grid-v g2"></div>
+      <div class="crop-grid-h g1"></div>
+      <div class="crop-grid-h g2"></div>
+      <div id="cropTag">1920 × 1080</div>
+      <div class="crop-handle h-nw" data-handle="nw"></div>
+      <div class="crop-handle h-n" data-handle="n"></div>
+      <div class="crop-handle h-ne" data-handle="ne"></div>
+      <div class="crop-handle h-e" data-handle="e"></div>
+      <div class="crop-handle h-se" data-handle="se"></div>
+      <div class="crop-handle h-s" data-handle="s"></div>
+      <div class="crop-handle h-sw" data-handle="sw"></div>
+      <div class="crop-handle h-w" data-handle="w"></div>
+    </div>
+  </div>
+
+  <button id="closeBtn" class="btn close-btn" aria-label="exit fullscreen" title="exit fullscreen (esc)">
+    <svg viewBox="0 0 24 24" class="stroke-ic">
+      <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+    </svg>
+    <span>exit fullscreen</span>
+  </button>
+
+  <div id="center">
+    <button id="bigPlay" class="big" aria-label="play" title="play (space)">
+      <svg viewBox="0 0 24 24">
+        <path d="M7.5 5.25a.75.75 0 0 1 1.14-.64l10.5 6.75a.75.75 0 0 1 0 1.28l-10.5 6.75A.75.75 0 0 1 7.5 18.75V5.25Z" />
+      </svg>
+    </button>
+    <button id="bigReplay" class="big" hidden aria-label="replay" title="replay (space)">
+      <svg viewBox="0 0 24 24" class="stroke-ic">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+    </button>
+    <div id="error" hidden>
+      <p>couldn't play this replay.</p>
+      <button id="retry">retry</button>
+    </div>
+  </div>
+
+  <div id="barScrim" aria-hidden="true"></div>
+
+  <div id="bar">
+    <button id="playPause" class="btn" aria-label="play / pause" title="play / pause (space)">
+      <svg viewBox="0 0 24 24">
+        <path id="icPlay" d="M7.5 5.6a.8.8 0 0 1 1.22-.68l10.1 6.4a.8.8 0 0 1 0 1.36l-10.1 6.4a.8.8 0 0 1-1.22-.68V5.6Z" />
+        <path id="icPause" d="M6.75 5h2.5a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1-.75-.75V5.75A.75.75 0 0 1 6.75 5Zm8 0h2.5a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1-.75-.75V5.75a.75.75 0 0 1 .75-.75Z" style="display:none" />
+      </svg>
+    </button>
+
+    <span id="cur" class="time">0:00</span>
+
+    <input id="seek" type="range" min="0" max="0" step="0.01" value="0" aria-label="seek" />
+
+    <span id="dur" class="time">0:00</span>
+
+    <button id="mute" class="btn" aria-label="mute / unmute" title="mute (m)">
+      <svg viewBox="0 0 24 24" class="stroke-ic">
+        <path d="M11 5L6 9H3v6h3l5 4V5Z" />
+        <path id="icWaveLow" d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+        <path id="icWaveHigh" d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+        <path id="icMuted" d="m21 9-5 5m0-5 5 5" style="opacity:0" />
+      </svg>
+    </button>
+
+    <input id="vol" type="range" min="0" max="1" step="0.01" value="1" aria-label="volume" />
+
+    <button id="fs" class="btn" aria-label="toggle fullscreen" title="fullscreen (f)">
+      <svg viewBox="0 0 24 24" class="stroke-ic">
+        <path id="icExpand" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+        <path id="icCompress" d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" style="display:none" />
+      </svg>
+    </button>
+  </div>
+
+  <script src="player.js"></script>
+</body>
+
+</html>
