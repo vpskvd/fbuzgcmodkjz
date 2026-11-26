@@ -41,7 +41,7 @@
                                     <Border Width="64" Height="64" CornerRadius="8" VerticalAlignment="Center"
                                             Background="{ThemeResource SurfaceElevatedBrush}" BorderThickness="1"
                                             BorderBrush="{ThemeResource SurfaceBorderBrush}">
-                                        <local:Guilloche x:Name="HeroOrnament" Width="58" Height="58"
+                                        <local:MediaOrb x:Name="HeroOrnament" Width="46" Height="46"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
 

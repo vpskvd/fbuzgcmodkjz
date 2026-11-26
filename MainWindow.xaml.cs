@@ -147,7 +147,7 @@ public partial class MainWindow : Window
     private int _cropSrcW;
     private int _cropSrcH;
 
-    private readonly HashSet<GridViewItem> _hoverWired = new();
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<GridViewItem, object> _hoverWired = new();
 
     private bool _capturingHotkey;
     private uint _pendingHotkeyModifier;
@@ -313,6 +313,12 @@ public partial class MainWindow : Window
 
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
         Activated += Window_Activated;
+        _appWindow.Changed += (_, args) =>
+        {
+            if (!args.DidPresenterChange) return;
+            _isMinimized = _appWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
+            UpdateHeroOrnament();
+        };
         Closed += Window_ClosedRequested;
         RootGrid.PreviewKeyDown += Window_PreviewKeyDown;
         RootGrid.PreviewKeyUp += Window_PreviewKeyUp;
@@ -654,7 +660,7 @@ public partial class MainWindow : Window
             var slide = visual.Compositor.CreateVector3KeyFrameAnimation();
             slide.InsertExpressionKeyFrame(0, "this.StartingValue");
             slide.InsertKeyFrame(1, target, visual.Compositor.CreateCubicBezierEasingFunction(new Vector2(0.22f, 1), new Vector2(0.36f, 1)));
-            slide.Duration = TimeSpan.FromMilliseconds(165);
+            slide.Duration = TimeSpan.FromMilliseconds(230);
             visual.StartAnimation("Translation", slide);
         }
         else if (!animate || target != _navPillPosition)
@@ -669,17 +675,24 @@ public partial class MainWindow : Window
         NavSettingsButton.Foreground = NavSettingsIcon.Stroke = _isSettingsActive ? primary : secondary;
     }
 
-    private void FadeIn(FrameworkElement element, float from = 0.9f, float offset = 0)
+    private void FadeIn(FrameworkElement element, float from = 0.8f, float offset = 0)
     {
-        if (!_uiSettings.AnimationsEnabled) return;
         Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(element, true);
         var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(element);
         var compositor = visual.Compositor;
+        if (!_uiSettings.AnimationsEnabled)
+        {
+            visual.StopAnimation("Opacity");
+            visual.StopAnimation("Translation");
+            visual.Opacity = 1;
+            visual.Properties.InsertVector3("Translation", Vector3.Zero);
+            return;
+        }
         var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.22f, 1), new Vector2(0.36f, 1));
         var fade = compositor.CreateScalarKeyFrameAnimation();
         fade.InsertKeyFrame(0, from);
         fade.InsertKeyFrame(1, 1, easing);
-        fade.Duration = TimeSpan.FromMilliseconds(165);
+        fade.Duration = TimeSpan.FromMilliseconds(240);
         visual.StartAnimation("Opacity", fade);
         if (offset == 0)
         {
@@ -704,7 +717,8 @@ public partial class MainWindow : Window
         oldPage.Visibility = Visibility.Collapsed;
         newPage.Visibility = Visibility.Visible;
         if (!fadeOnly && newPage is ScrollViewer scroll) scroll.ChangeView(0, 0, null, disableAnimation: true);
-        FadeIn(newPage, offset: fadeOnly ? 0 : 4);
+        // Keep WebView2 stationary while its own content becomes ready.
+        FadeIn(newPage, offset: fadeOnly || ReferenceEquals(newPage, ViewerPage) ? 0 : 5);
     }
 
     private void Notify(string title, string message, int balloonIcon)
@@ -1286,24 +1300,23 @@ public partial class MainWindow : Window
 
     private void GalleryGrid_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.InRecycleQueue || args.ItemContainer is not GridViewItem card) return;
-
-        if (!_hoverWired.Add(card)) return;
+        if (args.ItemContainer is not GridViewItem card) return;
+        if (args.InRecycleQueue || args.Phase == 0) AnimateCardHover(card, hover: false, animate: false);
+        if (args.InRecycleQueue || !_hoverWired.TryAdd(card, new object())) return;
         card.PointerEntered += (_, _) => AnimateCardHover(card, true);
         card.PointerExited += (_, _) => AnimateCardHover(card, false);
         card.PointerCaptureLost += (_, _) => AnimateCardHover(card, false);
     }
 
-    private void AnimateCardHover(GridViewItem card, bool hover)
+    private void AnimateCardHover(GridViewItem card, bool hover, bool animate = true)
     {
-        if (!_uiSettings.AnimationsEnabled) return;
         try
         {
             if (FindVisualChildByName<Microsoft.UI.Xaml.Shapes.Rectangle>(card, "ThumbHoverScrim") is { } scrim)
-                AnimateDouble(scrim, UIElement.OpacityProperty, hover ? 1.0 : 0.0, 150);
+                AnimateDouble(scrim, UIElement.OpacityProperty, hover ? 1.0 : 0.0, animate ? 155 : 0);
 
             if (FindVisualChildByName<Border>(card, "PlayOrb") is { } playOrb)
-                AnimateDouble(playOrb, UIElement.OpacityProperty, hover ? 1.0 : 0.90, 150);
+                AnimateDouble(playOrb, UIElement.OpacityProperty, hover ? 1.0 : 0.90, animate ? 155 : 0);
 
             if (FindVisualChildByName<Border>(card, "CardRoot") is { } rootBorder)
                 rootBorder.BorderBrush = hover ? GetThemedBrush("ControlElevationBorderBrush") : GetThemedBrush("SurfaceBorderBrush");
@@ -2384,12 +2397,12 @@ public partial class MainWindow : Window
         DurationCustomContent.Opacity = fromOpacity;
         DurationCustomWrap.Visibility = Visibility.Visible;
         bool resize = Math.Abs(end - from) >= 0.5;
-        double fadeMs = show || fromOpacity > 0.01 ? 100 : 0;
-        double resizeMs = resize ? 200 : 0;
+        double fadeMs = show ? 155 : fromOpacity > 0.01 ? 85 : 0;
+        double resizeMs = resize ? Math.Max(115, 225 * Math.Abs(end - from) / customSlot) : 0;
         var transition = new Storyboard();
         if (resize) AddMotion(transition, DurationCustomWrap, "Width", from, end, show ? 0 : fadeMs, resizeMs, layout: true);
         else DurationCustomWrap.Width = end;
-        if (fadeMs > 0) AddMotion(transition, DurationCustomContent, "Opacity", fromOpacity, show ? 1 : 0, show ? resizeMs : 0, fadeMs);
+        if (fadeMs > 0) AddMotion(transition, DurationCustomContent, "Opacity", fromOpacity, show ? 1 : 0, 0, fadeMs);
         else DurationCustomContent.Opacity = 0;
         transition.Completed += (_, _) =>
         {
@@ -2515,25 +2528,15 @@ public partial class MainWindow : Window
         panel.Visibility = Visibility.Visible;
         double width = panel.ActualWidth > 0 ? panel.ActualWidth : RecordAudioRow.ActualWidth;
         content.Measure(new Windows.Foundation.Size(Math.Max(1, width), double.PositiveInfinity));
-        panel.Height = show ? Math.Ceiling(content.DesiredSize.Height) : 0;
-        double duration = show ? 300 : 255;
+        double naturalHeight = Math.Ceiling(content.DesiredSize.Height);
+        double targetHeight = show ? naturalHeight : 0;
+        panel.Height = from;
+        panel.Opacity = fromOpacity;
+        double remaining = Math.Abs(targetHeight - from) / Math.Max(1, naturalHeight);
+        double duration = Math.Clamp((show ? 285 : 245) * remaining, 105, 280);
         var storyboard = new Storyboard();
-        var height = new DoubleAnimation
-        {
-            From = from, To = panel.Height, Duration = TimeSpan.FromMilliseconds(duration),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }, EnableDependentAnimation = true,
-        };
-        var opacity = new DoubleAnimation
-        {
-            From = fromOpacity, To = show ? 1 : 0, Duration = TimeSpan.FromMilliseconds(duration),
-            EasingFunction = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn },
-        };
-        Storyboard.SetTarget(height, panel);
-        Storyboard.SetTargetProperty(height, "Height");
-        Storyboard.SetTarget(opacity, panel);
-        Storyboard.SetTargetProperty(opacity, "Opacity");
-        storyboard.Children.Add(height);
-        storyboard.Children.Add(opacity);
+        AddMotion(storyboard, panel, "Height", from, targetHeight, 0, duration, layout: true);
+        AddMotion(storyboard, panel, "Opacity", fromOpacity, show ? 1 : 0, 0, duration * 0.85);
         storyboard.Completed += (_, _) =>
         {
             if (panel.IsHitTestVisible != show || !ReferenceEquals(panel.Tag, storyboard)) return;
@@ -3274,8 +3277,21 @@ public partial class MainWindow : Window
     {
         if (_dirty == _flyoutShown) return;
         _flyoutShown = _dirty;
-        PendingChangesFlyout.Visibility = _dirty ? Visibility.Visible : Visibility.Collapsed;
-        if (_dirty) FadeIn(PendingChangesFlyout, from: 0.86f);
+        PendingChangesFlyout.IsHitTestVisible = _dirty;
+        PendingSaveButton.IsTabStop = PendingDiscardButton.IsTabStop = _dirty;
+        if (_dirty)
+        {
+            bool wasVisible = PendingChangesFlyout.Visibility == Visibility.Visible;
+            PendingChangesFlyout.Visibility = Visibility.Visible;
+            AnimateDouble(PendingChangesFlyout, UIElement.OpacityProperty, 1, 170, from: wasVisible ? null : 0);
+        }
+        else
+        {
+            AnimateDouble(PendingChangesFlyout, UIElement.OpacityProperty, 0, 140, completed: () =>
+            {
+                if (!_dirty) PendingChangesFlyout.Visibility = Visibility.Collapsed;
+            });
+        }
     }
 
     private void RevertPendingChanges()
@@ -3439,7 +3455,7 @@ public partial class MainWindow : Window
         storyboard.Children.Add(animation);
     }
 
-    private void AnimateDouble(DependencyObject target, DependencyProperty property, double to, double milliseconds, double? from = null)
+    private void AnimateDouble(DependencyObject target, DependencyProperty property, double to, double milliseconds, double? from = null, Action? completed = null)
     {
         double start = from ?? (double)target.GetValue(property);
         if (_propertyMotion.TryGetValue(target, out var previous))
@@ -3448,7 +3464,11 @@ public partial class MainWindow : Window
             previous.Stop();
         }
         target.SetValue(property, to);
-        if (!_uiSettings.AnimationsEnabled || milliseconds <= 0 || Math.Abs(start - to) < 0.001) return;
+        if (!_uiSettings.AnimationsEnabled || milliseconds <= 0 || Math.Abs(start - to) < 0.001)
+        {
+            completed?.Invoke();
+            return;
+        }
 
         var storyboard = new Storyboard();
         AddMotion(storyboard, target, property == UIElement.OpacityProperty ? "Opacity" : "ScaleX", start, to, 0, milliseconds);
@@ -3458,14 +3478,14 @@ public partial class MainWindow : Window
             if (!_propertyMotion.TryGetValue(target, out var current) || current != storyboard) return;
             _propertyMotion.Remove(target);
             storyboard.Stop();
+            completed?.Invoke();
         };
         storyboard.Begin();
     }
 
     private void StartDotPulse()
     {
-        StopDotPulse();
-        if (!_uiSettings.AnimationsEnabled) return;
+        if (_dotStoryboard != null || !_uiSettings.AnimationsEnabled) return;
         try
         {
             var anim = new DoubleAnimation

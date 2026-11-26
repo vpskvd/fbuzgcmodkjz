@@ -210,7 +210,7 @@ body.paused .big {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.36);
   opacity: 1;
   transform: translateY(0);
-  animation: barEnter 260ms var(--motion-ease) backwards;
+  animation: barEnter var(--motion-panel) var(--motion-ease) backwards;
   transition: opacity var(--motion-panel) var(--motion-ease), transform var(--motion-panel) var(--motion-ease);
   will-change: opacity, transform;
 }
@@ -230,14 +230,12 @@ body.idle #bar:not(:has(:focus-visible)) {
   opacity: 0;
   transform: translateY(6px);
   pointer-events: none;
-  transition: opacity var(--motion-panel) var(--motion-ease), transform var(--motion-panel) var(--motion-ease);
 }
 
 body.idle .close-btn:not(:focus-visible) {
   opacity: 0;
   transform: translateY(-6px);
   pointer-events: none;
-  transition: opacity var(--motion-panel) var(--motion-ease), transform var(--motion-panel) var(--motion-ease);
 }
 
 .btn {
@@ -253,7 +251,7 @@ body.idle .close-btn:not(:focus-visible) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 120ms var(--motion-ease), transform var(--motion-press) var(--motion-ease), opacity 120ms ease;
+  transition: background-color var(--motion-press) var(--motion-ease), transform var(--motion-press) var(--motion-ease), opacity var(--motion-press) var(--motion-ease);
 }
 
 .btn:hover {

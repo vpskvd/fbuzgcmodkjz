@@ -467,12 +467,13 @@ function activity() {
   document.body.classList.remove("idle");
   if (idleTimer) clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
-    if (!v.paused && !v.ended && !v.srcError && errorBox.hidden && !scrubbing && !editMode) {
+    if (!v.paused && !v.ended && !v.srcError && errorBox.hidden && !scrubbing && !editMode &&
+        !document.querySelector("#bar:hover, #bar :focus-visible, #closeBtn:hover, #closeBtn:focus-visible")) {
       document.body.classList.add("idle");
     }
   }, 2000);
 }
-["mousemove", "pointermove", "pointerdown", "keydown", "wheel"].forEach((ev) =>
+["pointermove", "pointerdown", "keydown", "wheel", "focusin", "focusout"].forEach((ev) =>
   document.addEventListener(ev, activity, { passive: true })
 );
 

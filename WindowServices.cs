@@ -895,7 +895,7 @@ public static class UiHover
         var animation = compositor.CreateVector3KeyFrameAnimation();
         animation.InsertExpressionKeyFrame(0, "this.StartingValue");
         animation.InsertKeyFrame(1, new System.Numerics.Vector3(target, target, 1), easing);
-        animation.Duration = TimeSpan.FromMilliseconds(target < 1 ? 100 : 150);
+        animation.Duration = TimeSpan.FromMilliseconds(target < 1 ? 115 : 165);
         visual.CenterPoint = new System.Numerics.Vector3((float)element.ActualWidth / 2, (float)element.ActualHeight / 2, 0);
         visual.StartAnimation("Scale", animation);
     }
@@ -1076,7 +1076,14 @@ public sealed class ClipNotificationWindow : Window
         _motion.Stop();
         if (!_uiSettings.AnimationsEnabled)
         {
-            if (leaving) HideSafely(); else _lifetime.Start();
+            if (leaving) HideSafely();
+            else
+            {
+                _card.Opacity = 1;
+                _currentX = destination;
+                SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011);
+                _lifetime.Start();
+            }
             return;
         }
         _motionFrom = _currentX; _motionTo = destination;
@@ -1092,9 +1099,7 @@ public sealed class ClipNotificationWindow : Window
         {
             double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(_motionStart).TotalMilliseconds;
             double progress = Math.Clamp(elapsed / _motionDuration, 0, 1);
-            double eased = _leaving
-                ? (progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.Pow(-2 * progress + 2, 3) / 2)
-                : 1 - Math.Pow(1 - progress, 3);
+            double eased = _leaving ? progress * progress * (3 - 2 * progress) : 1 - Math.Pow(1 - progress, 3);
             _currentX = (int)Math.Round(_motionFrom + (_motionTo - _motionFrom) * eased);
             _card.Opacity = _motionOpacity + ((_leaving ? 0 : 1) - _motionOpacity) * eased;
             if (!SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011))
