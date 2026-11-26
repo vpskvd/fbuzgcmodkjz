@@ -4,8 +4,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:InstantReplay">
 
+    <Window.SystemBackdrop>
+        <MicaBackdrop/>
+    </Window.SystemBackdrop>
+
     <Grid x:Name="RootGrid"
-          Background="{ThemeResource BgBrush}"
           SizeChanged="RootGrid_SizeChanged"
           KeyDown="RootGrid_KeyDown">
 
@@ -22,8 +25,8 @@
                           HorizontalScrollMode="Disabled"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Grid Padding="24,72,24,28">
-                    <StackPanel MaxWidth="912"
+                <Grid Padding="32,80,32,32">
+                    <StackPanel MaxWidth="1040"
                                 HorizontalAlignment="Stretch"
                                 Spacing="16">
 
@@ -40,140 +43,28 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- 3D Kinetic Isometric Glass Prism Showcase (replaces circular aperture) -->
-                                    <Border x:Name="HeroAperture"
-                                            Width="64"
-                                            Height="64"
-                                            CornerRadius="8"
-                                            Background="{ThemeResource SurfaceElevatedBrush}"
-                                            BorderBrush="{ThemeResource SurfaceBorderBrush}"
-                                            BorderThickness="1"
-                                            VerticalAlignment="Center">
-                                        <Grid>
-                                            <!-- Subtle 4x4 Recessed Instrument Dot Lattice -->
-                                            <Canvas Width="44" Height="44" Opacity="0.34" IsHitTestVisible="False">
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="6" Canvas.Top="6" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="16" Canvas.Top="6" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="26" Canvas.Top="6" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="36" Canvas.Top="6" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="6" Canvas.Top="16" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="36" Canvas.Top="16" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="6" Canvas.Top="26" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="36" Canvas.Top="26" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="6" Canvas.Top="36" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="16" Canvas.Top="36" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="26" Canvas.Top="36" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                                <Ellipse Width="1.5" Height="1.5" Canvas.Left="36" Canvas.Top="36" Fill="{ThemeResource TextTertiaryBrush}"/>
-                                            </Canvas>
-
-                                            <!-- Soft Inner Radial Highlight behind Prism (only when recording) -->
-                                            <Ellipse x:Name="HeroCoreGlow"
-                                                     Width="42"
-                                                     Height="42"
-                                                     Fill="{ThemeResource HeroCoreGlowBrush}"
-                                                     Opacity="0"
-                                                     IsHitTestVisible="False"/>
-
-                                            <!-- Layer 1: Outer 3D Gimbal Diamond Frame -->
-                                            <Grid x:Name="HeroPrismOuter"
-                                                  Width="36"
-                                                  Height="36"
-                                                  Opacity="0.45"
-                                                  HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center">
-                                                <Border Width="28"
-                                                        Height="28"
-                                                        CornerRadius="6"
-                                                        Background="{ThemeResource CardSecondaryBrush}"
-                                                        BorderBrush="{ThemeResource AccentButtonBorderBrush}"
-                                                        BorderThickness="1.2"
-                                                        RenderTransformOrigin="0.5,0.5">
-                                                    <Border.RenderTransform>
-                                                        <RotateTransform Angle="45"/>
-                                                    </Border.RenderTransform>
-                                                </Border>
-                                            </Grid>
-
-                                            <!-- Layer 2: Mid Counter-Tilting Frosted Amber Glass Plane -->
-                                            <Border x:Name="HeroPrismMid"
-                                                    Width="24"
-                                                    Height="24"
-                                                    CornerRadius="4"
-                                                    Background="{ThemeResource AccentDimBrush}"
-                                                    BorderBrush="{ThemeResource AccentIndicatorBrush}"
-                                                    BorderThickness="1.35"
-                                                    Opacity="0.50"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"/>
-
-                                            <!-- Layer 3: Foreground Isometric Faceted Hex-Cube Wireframe + Core Spark -->
-                                            <Canvas x:Name="HeroPrismCore"
-                                                    Width="28"
-                                                    Height="28"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    Opacity="0.72">
-                                                <!-- Isometric Cube Outer Hexagon & Internal Facets -->
-                                                <Path Stroke="{ThemeResource AccentIndicatorBrush}"
-                                                      StrokeThickness="1.45"
-                                                      StrokeLineJoin="Round"
-                                                      StrokeStartLineCap="Round"
-                                                      StrokeEndLineCap="Round"
-                                                      Data="M 14,3 L 23.5,8.5 V 19.5 L 14,25 L 4.5,19.5 V 8.5 Z M 14,14 L 4.5,8.5 M 14,14 L 23.5,8.5 M 14,14 V 25"/>
-                                                <!-- Bright Core Center Vertex -->
-                                                <Polygon Points="14,10.5 17,12.25 17,15.75 14,17.5 11,15.75 11,12.25"
-                                                         Fill="{ThemeResource AccentBrush}"/>
-                                            </Canvas>
-
-                                            <!-- Layer 4: Subtle Harmonic Micro-Bars along Bottom Rim -->
-                                            <StackPanel Orientation="Horizontal"
-                                                        Spacing="2.5"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Bottom"
-                                                        Margin="0,0,0,4"
-                                                        Opacity="0.85">
-                                                <Border x:Name="HeroBar1" Width="2" Height="6" CornerRadius="1" Background="{ThemeResource AccentIndicatorBrush}" RenderTransformOrigin="0.5,1"/>
-                                                <Border x:Name="HeroBar2" Width="2" Height="8" CornerRadius="1" Background="{ThemeResource AccentIndicatorBrush}" RenderTransformOrigin="0.5,1"/>
-                                                <Border x:Name="HeroBar3" Width="2" Height="7" CornerRadius="1" Background="{ThemeResource AccentIndicatorBrush}" RenderTransformOrigin="0.5,1"/>
-                                                <Border x:Name="HeroBar4" Width="2" Height="5" CornerRadius="1" Background="{ThemeResource AccentIndicatorBrush}" RenderTransformOrigin="0.5,1"/>
-                                            </StackPanel>
-
-                                            <!-- Save Confirmation Rectangular Pulse Border -->
-                                            <Border x:Name="HeroSaveBurstRing"
-                                                    Width="62"
-                                                    Height="62"
-                                                    CornerRadius="8"
-                                                    BorderBrush="{ThemeResource AccentBrush}"
-                                                    BorderThickness="1.8"
-                                                    Opacity="0"
-                                                    IsHitTestVisible="False"/>
-                                        </Grid>
+                                    <Border Width="52" Height="52" CornerRadius="8"
+                                            Background="{ThemeResource AccentDimBrush}" VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xE7B5;" FontSize="24"
+                                                  Foreground="{ThemeResource AccentIndicatorBrush}"/>
                                     </Border>
 
                                     <!-- Status & Buffer Info + Hardware Keycap -->
                                     <StackPanel Grid.Column="1"
                                                 VerticalAlignment="Center"
                                                 Spacing="4">
-                                        <StackPanel Orientation="Horizontal"
-                                                    Spacing="12">
-                                            <TextBlock Text="instant replay"
-                                                       Style="{StaticResource DisplayTitle}"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock x:Name="HeroBufferText"
-                                                       Text="0s / 60s"
-                                                       Style="{StaticResource Mono}"
-                                                       FontSize="12"
-                                                       Foreground="{ThemeResource TextSecondaryBrush}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
+                                        <TextBlock Text="Instant Replay" Style="{StaticResource DisplayTitle}"
+                                                   AutomationProperties.HeadingLevel="Level1"/>
+                                        <TextBlock x:Name="HeroBufferText" Text="0 s / 60 s"
+                                                   Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis"/>
 
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="HeroSummaryText"
-                                                       Text="buffering last 60 seconds at 60 fps · whole desktop"
+                                                       Text="Buffering last 60 seconds at 60 fps · whole desktop"
                                                        Style="{StaticResource Caption}"
                                                        LineHeight="16"
                                                        LineStackingStrategy="BlockLineHeight"
@@ -190,7 +81,7 @@
                                                     Margin="0,1,0,0"
                                                     VerticalAlignment="Center">
                                                 <TextBlock x:Name="HeroHotkeyText"
-                                                           Text="shift + s"
+                                                           Text="Shift + s"
                                                            Style="{StaticResource Mono}"
                                                            FontSize="11"
                                                            LineHeight="12"
@@ -208,12 +99,12 @@
                                                 Spacing="8"
                                                 VerticalAlignment="Center">
                                         <Button x:Name="SaveReplayButton"
-                                                AutomationProperties.Name="save replay"
+                                                AutomationProperties.Name="Save replay"
                                                 Visibility="Collapsed"
                                                 Style="{StaticResource AccentButtonStyle}"
                                                 MinWidth="128"
                                                 Click="SaveReplayButton_Click"
-                                                ToolTipService.ToolTip="save buffered replay now">
+                                                ToolTipService.ToolTip="Save buffered replay now">
                                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                 <Path Width="14" Height="14" Stretch="Uniform"
                                                       Stroke="{Binding Foreground, ElementName=SaveReplayButton}"
@@ -224,7 +115,7 @@
                                                       VerticalAlignment="Center"
                                                       Data="M 5.5,3.5 H 18.5 A 1.5,1.5 0 0 1 20,5 V 20.5 L 12,15.8 L 4,20.5 V 5 A 1.5,1.5 0 0 1 5.5,3.5 Z"/>
                                                 <TextBlock x:Name="SaveReplayLabel"
-                                                           Text="save replay"
+                                                           Text="Save replay"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
@@ -232,7 +123,7 @@
                                         </Button>
 
                                         <Button x:Name="StartReplayButton"
-                                                AutomationProperties.Name="start replay"
+                                                AutomationProperties.Name="Start replay"
                                                 Style="{StaticResource AccentButtonStyle}"
                                                 MinWidth="132"
                                                 Click="StartStopButton_Click">
@@ -246,7 +137,7 @@
                                                       VerticalAlignment="Center"
                                                       Data="M 7,5 L 19,12 L 7,19 Z"/>
                                                 <TextBlock x:Name="StartReplayText"
-                                                           Text="start replay"
+                                                           Text="Start replay"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
@@ -254,7 +145,7 @@
                                         </Button>
 
                                         <Button x:Name="StopReplayButton"
-                                                AutomationProperties.Name="stop"
+                                                AutomationProperties.Name="Stop"
                                                 Visibility="Collapsed"
                                                 Style="{StaticResource DangerButtonStyle}"
                                                 MinWidth="96"
@@ -269,7 +160,7 @@
                                                       VerticalAlignment="Center"
                                                       Data="M 6,4 H 18 A 2,2 0 0 1 20,6 V 18 A 2,2 0 0 1 18,20 H 6 A 2,2 0 0 1 4,18 V 6 A 2,2 0 0 1 6,4 Z"/>
                                                 <TextBlock x:Name="StopReplayText"
-                                                           Text="stop"
+                                                           Text="Stop"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
@@ -327,12 +218,12 @@
                                               Data="M 7,7 H 17 V 17 H 7 Z M 9.5,2 V 5 M 14.5,2 V 5 M 9.5,19 V 22 M 14.5,19 V 22 M 2,9.5 H 5 M 2,14.5 H 5 M 19,9.5 H 22 M 19,14.5 H 22 M 5,6.5 A 1.5,1.5 0 0 1 6.5,5 H 17.5 A 1.5,1.5 0 0 1 19,6.5 V 17.5 A 1.5,1.5 0 0 1 17.5,19 H 6.5 A 1.5,1.5 0 0 1 5,17.5 Z"/>
 
                                         <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                            <TextBlock Text="cpu usage"
+                                            <TextBlock Text="Cpu usage"
                                                        FontSize="12.5"
                                                        FontWeight="Medium"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="CpuHintText"
-                                                       Text="overall processor load"
+                                                       Text="Overall processor load"
                                                        FontSize="11"
                                                        Foreground="{ThemeResource TextTertiaryBrush}"
                                                        TextTrimming="CharacterEllipsis"/>
@@ -396,12 +287,12 @@
                                               Data="M 3,6.5 H 21 A 1.5,1.5 0 0 1 22.5,8 V 14.5 A 1.5,1.5 0 0 1 21,16 H 3 A 1.5,1.5 0 0 1 1.5,14.5 V 8 A 1.5,1.5 0 0 1 3,6.5 Z M 7,10 V 12.5 M 12,10 V 12.5 M 17,10 V 12.5 M 6,16 V 19.5 M 10,16 V 19.5 M 14,16 V 19.5 M 18,16 V 19.5"/>
 
                                         <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                            <TextBlock Text="system memory"
+                                            <TextBlock Text="System memory"
                                                        FontSize="12.5"
                                                        FontWeight="Medium"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="RamHintText"
-                                                       Text="in use"
+                                                       Text="In use"
                                                        FontSize="11"
                                                        Typography.NumeralAlignment="Tabular"
                                                        Foreground="{ThemeResource TextTertiaryBrush}"
@@ -446,7 +337,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                    <TextBlock Text="gallery"
+                                    <TextBlock Text="Gallery"
                                                Style="{StaticResource SectionTitle}"
                                                VerticalAlignment="Center"/>
                                     <TextBlock x:Name="GalleryCountText"
@@ -464,7 +355,7 @@
                                         CornerRadius="4"
                                         Padding="12,0"
                                         Click="OpenReplaysFolderButton_Click"
-                                        ToolTipService.ToolTip="open videos\replays folder">
+                                        ToolTipService.ToolTip="Open videos\replays folder">
                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <Path Width="14" Height="14" Stretch="Uniform"
                                               Stroke="{Binding Foreground, ElementName=OpenFolderButton}"
@@ -475,7 +366,7 @@
                                               VerticalAlignment="Center"
                                               Data="M 3,6.5 A 1.5,1.5 0 0 1 4.5,5 H 9.5 L 11.5,7.5 H 19.5 A 1.5,1.5 0 0 1 21,9 V 18 A 1.5,1.5 0 0 1 19.5,19.5 H 4.5 A 1.5,1.5 0 0 1 3,18 Z"/>
                                         <TextBlock x:Name="GalleryOpenFolderText"
-                                                   Text="open folder"
+                                                   Text="Open folder"
                                                    FontSize="12.5"
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
@@ -666,7 +557,7 @@
                                                                 VerticalAlignment="Center">
                                                         <Button Style="{StaticResource MediaCardActionButtonStyle}"
                                                                 Click="CardOpenFolderButton_Click"
-                                                                ToolTipService.ToolTip="show in explorer">
+                                                                ToolTipService.ToolTip="Show in explorer">
                                                             <Path Width="14" Height="14" Stretch="Uniform"
                                                                   IsHitTestVisible="False"
                                                                   Stroke="{ThemeResource TextSecondaryBrush}"
@@ -679,7 +570,7 @@
                                                         </Button>
                                                         <Button Style="{StaticResource MediaCardActionButtonStyle}"
                                                                 Click="CardDeleteButton_Click"
-                                                                ToolTipService.ToolTip="delete clip">
+                                                                ToolTipService.ToolTip="Delete clip">
                                                             <Path Width="14" Height="14" Stretch="Uniform"
                                                                   IsHitTestVisible="False"
                                                                   Stroke="{ThemeResource TextSecondaryBrush}"
@@ -718,12 +609,12 @@
                                               VerticalAlignment="Center"
                                               Data="M 2,3 H 14 C 14.8,3 15.5,3.7 15.5,4.5 V 11.5 C 15.5,12.3 14.8,13 14,13 H 2 C 1.2,13 0.5,12.3 0.5,11.5 V 4.5 C 0.5,3.7 1.2,3 2,3 Z M 6.5,5.5 L 10.5,8 L 6.5,10.5 Z"/>
                                     </Border>
-                                    <TextBlock Text="no replays yet"
+                                    <TextBlock Text="No replays yet"
                                                FontSize="15"
                                                FontWeight="SemiBold"
                                                HorizontalAlignment="Center"/>
                                     <TextBlock x:Name="EmptyGalleryHintText"
-                                               Text="press shift + s while recording to save your first clip to videos\replays"
+                                               Text="Press shift + s while recording to save your first clip to videos\replays"
                                                Style="{StaticResource Mono}"
                                                TextAlignment="Center"
                                                TextWrapping="Wrap"
@@ -745,30 +636,32 @@
                           HorizontalScrollMode="Disabled"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Grid Padding="24,72,24,72">
+                <Grid Padding="32,80,32,128">
                     <StackPanel x:Name="SettingsContent"
-                                MaxWidth="720"
+                                MaxWidth="840"
                                 HorizontalAlignment="Stretch"
                                 Spacing="24">
 
+                        <TextBlock Text="Settings" Style="{StaticResource PageTitle}" AutomationProperties.HeadingLevel="Level1"/>
+
                         <!-- 1. REPLAY TARGET -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="replay target" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="Replay target" Style="{StaticResource SettingGroupHeader}"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="capture target">
+                                    <local:SettingRow Label="Capture target">
                                         <ComboBox x:Name="CaptureTargetCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="CaptureTargetCombo_SelectionChanged">
-                                            <ComboBoxItem Content="whole desktop"/>
-                                            <ComboBoxItem Content="game capture"/>
+                                            <ComboBoxItem Content="Whole desktop"/>
+                                            <ComboBoxItem Content="Game capture"/>
                                         </ComboBox>
                                     </local:SettingRow>
 
                                     <Rectangle x:Name="MonitorDivider" Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow x:Name="CaptureMonitorRow" Label="display">
+                                    <local:SettingRow x:Name="CaptureMonitorRow" Label="Display">
                                         <ComboBox x:Name="CaptureMonitorCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
@@ -777,7 +670,7 @@
 
                                     <Rectangle x:Name="GamesRuleDivider" Height="1" Fill="{ThemeResource HairlineBrush}" Visibility="Collapsed"/>
 
-                                    <local:SettingRow x:Name="CustomGamesRow" Label="recognized games" Visibility="Collapsed">
+                                    <local:SettingRow x:Name="CustomGamesRow" Label="Recognized games" Visibility="Collapsed">
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
@@ -792,14 +685,14 @@
                                             <Button Grid.Column="1"
                                                     Style="{StaticResource SettingsInputButtonStyle}"
                                                     Padding="12,0"
-                                                    Content="manage..."
+                                                    Content="Manage..."
                                                     Click="ManageGamesButton_Click"/>
                                         </Grid>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="show mouse cursor">
+                                    <local:SettingRow Label="Show mouse cursor">
                                         <ToggleSwitch x:Name="CaptureCursorToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
@@ -813,30 +706,34 @@
 
                         <!-- 2. VIDEO QUALITY -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="video quality" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="Video quality" Style="{StaticResource SettingGroupHeader}"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="replay duration">
-                                        <Grid x:Name="DurationRowHost" Width="248" Height="32">
-                                            <ComboBox x:Name="DurationCombo"
-                                                      Width="248"
-                                                      HorizontalAlignment="Left"
+                                    <local:SettingRow Label="Replay duration">
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox x:Name="DurationCombo" Grid.ColumnSpan="2"
+                                                      HorizontalAlignment="Stretch"
                                                       VerticalAlignment="Center"
                                                       CornerRadius="4"
                                                       SelectionChanged="DurationCombo_SelectionChanged">
                                                 <ComboBoxItem Content="30 seconds"/>
                                                 <ComboBoxItem Content="60 seconds"/>
                                                 <ComboBoxItem Content="120 seconds"/>
-                                                <ComboBoxItem Content="custom"/>
+                                                <ComboBoxItem Content="Custom"/>
                                             </ComboBox>
-                                            <Grid x:Name="DurationCustomWrap"
+                                            <Grid x:Name="DurationCustomWrap" Grid.Column="1"
                                                   Width="96"
-                                                  Height="32"
-                                                  HorizontalAlignment="Right"
+                                                  MinHeight="32"
+                                                  HorizontalAlignment="Stretch"
                                                   VerticalAlignment="Center"
                                                   Visibility="Collapsed">
                                                 <TextBox x:Name="DurationCustomBox"
                                                          Style="{StaticResource CompactNumberTextBoxStyle}"
+                                                         AutomationProperties.Name="Replay duration in seconds"
                                                          PlaceholderText="60"
                                                          InputScope="Number"
                                                          TextChanged="DurationCustomBox_TextChanged"
@@ -846,7 +743,7 @@
                                                            Foreground="{ThemeResource TextTertiaryBrush}"
                                                            HorizontalAlignment="Right"
                                                            VerticalAlignment="Center"
-                                                           Margin="0,0,10,1"
+                                                           Margin="0,0,12,0"
                                                            IsHitTestVisible="False"/>
                                             </Grid>
                                         </Grid>
@@ -854,7 +751,7 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="frame rate">
+                                    <local:SettingRow Label="Frame rate">
                                         <ComboBox x:Name="FpsCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
@@ -867,14 +764,14 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="quality">
+                                    <local:SettingRow Label="Quality">
                                         <ComboBox x:Name="QualityCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="QualityCombo_SelectionChanged">
-                                            <ComboBoxItem Content="low"/>
-                                            <ComboBoxItem Content="balanced"/>
-                                            <ComboBoxItem Content="high"/>
+                                            <ComboBoxItem Content="Low"/>
+                                            <ComboBoxItem Content="Balanced"/>
+                                            <ComboBoxItem Content="High"/>
                                         </ComboBox>
                                     </local:SettingRow>
                                 </StackPanel>
@@ -883,10 +780,10 @@
 
                         <!-- 3. AUDIO -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="audio" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="Audio" Style="{StaticResource SettingGroupHeader}"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="microphone">
+                                    <local:SettingRow Label="Microphone">
                                         <ComboBox x:Name="MicCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
@@ -913,7 +810,7 @@
                                                      VerticalAlignment="Center"/>
                                             <TextBlock x:Name="MicStatusLabel"
                                                        Grid.Column="1"
-                                                       Text="detecting active microphone..."
+                                                       Text="Detecting active microphone..."
                                                        FontSize="12"
                                                        Foreground="{ThemeResource TextSecondaryBrush}"
                                                        TextTrimming="CharacterEllipsis"
@@ -941,15 +838,15 @@
                                                     CornerRadius="4"
                                                     Padding="12,0"
                                                     FontSize="12"
-                                                    Content="detect active"
+                                                    Content="Detect active"
                                                     Click="DetectMicButton_Click"
-                                                    ToolTipService.ToolTip="scan active microphones and select speaking input or default"/>
+                                                    ToolTipService.ToolTip="Scan active microphones and select speaking input or default"/>
                                         </Grid>
                                     </Border>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="record microphone">
+                                    <local:SettingRow Label="Record microphone">
                                         <ToggleSwitch x:Name="MicToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
@@ -960,7 +857,7 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow x:Name="RecordAudioRow" Label="record system audio">
+                                    <local:SettingRow x:Name="RecordAudioRow" Label="Record system audio">
                                         <ToggleSwitch x:Name="SysAudioToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
@@ -972,13 +869,13 @@
                                     <StackPanel x:Name="SystemAudioSourceSection" Visibility="Visible">
                                         <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                        <local:SettingRow Label="system audio source">
+                                        <local:SettingRow Label="System audio source">
                                             <ComboBox x:Name="SysAudioModeCombo"
                                                       HorizontalAlignment="Stretch"
                                                       CornerRadius="4"
                                                       SelectionChanged="SysAudioModeCombo_SelectionChanged">
-                                                <ComboBoxItem Content="all desktop audio"/>
-                                                <ComboBoxItem Content="selected apps only"/>
+                                                <ComboBoxItem Content="All desktop audio"/>
+                                                <ComboBoxItem Content="Selected apps only"/>
                                             </ComboBox>
                                         </local:SettingRow>
 
@@ -996,7 +893,7 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="recorded applications"
+                                                    <TextBlock Text="Recorded applications"
                                                                FontSize="12"
                                                                Foreground="{ThemeResource TextSecondaryBrush}"
                                                                VerticalAlignment="Center"/>
@@ -1008,7 +905,7 @@
                                                             Padding="10,0"
                                                             CornerRadius="4"
                                                             FontSize="11.5"
-                                                            Content="refresh"
+                                                            Content="Refresh"
                                                             Click="RefreshAudioAppsButton_Click"/>
                                                 </Grid>
                                                 <StackPanel x:Name="AudioAppsListPanel" Spacing="4"/>
@@ -1019,8 +916,8 @@
                                                     </Grid.ColumnDefinitions>
                                                     <TextBox x:Name="AddAudioAppBox"
                                                              Style="{StaticResource CompactNumberTextBoxStyle}"
-                                                             Padding="10,0,10,1"
-                                                             PlaceholderText="add app (e.g. csgo.exe, discord.exe)"
+                                                             Padding="12,0"
+                                                             PlaceholderText="Executable name, e.g. discord.exe"
                                                              KeyDown="AddAudioAppBox_KeyDown"/>
                                                     <Button x:Name="AddAudioAppButton"
                                                             Grid.Column="1"
@@ -1030,7 +927,7 @@
                                                             Padding="12,0"
                                                             CornerRadius="4"
                                                             FontSize="12"
-                                                            Content="add"
+                                                            Content="Add"
                                                             Click="AddAudioAppButton_Click"/>
                                                 </Grid>
                                             </StackPanel>
@@ -1042,10 +939,10 @@
 
                         <!-- 4. STORAGE AND HOTKEYS -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="storage and hotkeys" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="Storage and hotkeys" Style="{StaticResource SettingGroupHeader}"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <TextBlock Text="save location"
+                                    <TextBlock Text="Save location"
                                                FontSize="13.5"
                                                Foreground="{ThemeResource TextPrimaryBrush}"
                                                Margin="0,12,0,8"/>
@@ -1071,7 +968,7 @@
                                                       StrokeLineJoin="Round"
                                                       Data="M 1.5,2 H 5.5 L 7,3.5 H 13.5 C 14.3,3.5 15,4.2 15,5 V 11 C 15,11.8 14.3,12.5 13.5,12.5 H 2.5 C 1.7,12.5 1,11.8 1,11 V 3 C 1,2.4 1.2,2 1.5,2 Z"/>
                                                 <TextBlock x:Name="BrowseSaveText"
-                                                           Text="browse"
+                                                           Text="Browse"
                                                            FontSize="12.5"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
@@ -1080,7 +977,7 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="save replay hotkey">
+                                    <local:SettingRow Label="Save replay hotkey">
                                         <Button x:Name="HotkeyCaptureButton"
                                                 HorizontalAlignment="Stretch"
                                                 Style="{StaticResource SettingsInputButtonStyle}"
@@ -1094,7 +991,7 @@
                                                       StrokeEndLineCap="Round"
                                                       Data="M 1.5,1 H 12.5 C 13.3,1 14,1.7 14,2.5 V 8.5 C 14,9.3 13.3,10 12.5,10 H 1.5 C 0.7,10 0,9.3 0,8.5 V 2.5 C 0,1.7 0.7,1 1.5,1 Z M 3.5,4 H 4.5 M 6.5,4 H 7.5 M 9.5,4 H 10.5 M 4,7 H 10"/>
                                                 <TextBlock x:Name="HotkeyCaptureText"
-                                                           Text="shift + s"
+                                                           Text="Shift + s"
                                                            FontSize="12.5"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
@@ -1106,10 +1003,10 @@
 
                         <!-- 5. APP -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="app" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="App" Style="{StaticResource SettingGroupHeader}"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="start with windows">
+                                    <local:SettingRow Label="Start with windows">
                                         <ToggleSwitch x:Name="StartupToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
@@ -1120,9 +1017,9 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="dark mode">
+                                    <local:SettingRow Label="Dark mode">
                                         <ToggleSwitch x:Name="ThemeToggle"
-                                                      AutomationProperties.Name="dark mode toggle"
+                                                      AutomationProperties.Name="Dark mode toggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -1135,7 +1032,7 @@
 
                         <!-- 6. ADVANCED -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="advanced" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="Advanced" Style="{StaticResource SettingGroupHeader}"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <Border Background="{ThemeResource WarningBgBrush}"
@@ -1159,11 +1056,11 @@
                                                   Margin="0,2,0,0"
                                                   Data="M 8,2 L 14.5,13.5 H 1.5 Z M 8,6.5 V 9.5 M 8,11.5 V 11.8"/>
                                             <StackPanel Grid.Column="1" Spacing="2">
-                                                <TextBlock Text="capture compatibility"
+                                                <TextBlock Text="Capture compatibility"
                                                            FontSize="12.5"
                                                            FontWeight="SemiBold"
                                                            Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                                <TextBlock Text="encoder and capture-method changes can affect performance and fullscreen compatibility. auto and wgc are recommended."
+                                                <TextBlock Text="Encoder and capture-method changes can affect performance and fullscreen compatibility. auto and wgc are recommended."
                                                            FontSize="12"
                                                            TextWrapping="Wrap"
                                                            Foreground="{ThemeResource TextSecondaryBrush}"/>
@@ -1171,33 +1068,33 @@
                                         </Grid>
                                     </Border>
 
-                                    <local:SettingRow Label="video encoder">
+                                    <local:SettingRow Label="Video encoder">
                                         <ComboBox x:Name="EncoderCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="EncoderCombo_SelectionChanged">
-                                            <ComboBoxItem Content="auto"/>
-                                            <ComboBoxItem Content="hardware"/>
-                                            <ComboBoxItem Content="software"/>
+                                            <ComboBoxItem Content="Auto"/>
+                                            <ComboBoxItem Content="Hardware"/>
+                                            <ComboBoxItem Content="Software"/>
                                         </ComboBox>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="capture method">
+                                    <local:SettingRow Label="Capture method">
                                         <ComboBox x:Name="CaptureMethodCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="CaptureMethodCombo_SelectionChanged">
-                                            <ComboBoxItem x:Name="CaptureAutoItem" Content="auto"/>
-                                            <ComboBoxItem x:Name="CaptureWgcItem" Content="wgc"/>
-                                            <ComboBoxItem x:Name="CaptureDxgiItem" Content="dxgi"/>
+                                            <ComboBoxItem x:Name="CaptureAutoItem" Content="Auto"/>
+                                            <ComboBoxItem x:Name="CaptureWgcItem" Content="Wgc"/>
+                                            <ComboBoxItem x:Name="CaptureDxgiItem" Content="Dxgi"/>
                                         </ComboBox>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="debug logging">
+                                    <local:SettingRow Label="Debug logging">
                                         <ToggleSwitch x:Name="DebugToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
@@ -1211,10 +1108,10 @@
 
                         <!-- 7. UPDATES -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="updates" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="Updates" Style="{StaticResource SettingGroupHeader}"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="check automatically">
+                                    <local:SettingRow Label="Check automatically">
                                         <ToggleSwitch x:Name="AutoUpdateToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
@@ -1232,17 +1129,17 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                             <TextBlock x:Name="UpdateVersionText"
-                                                       Text="version 1.0.5"
+                                                       Text="Version 1.0.5"
                                                        FontSize="13.5"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="UpdateStatusText"
-                                                       Text="check github releases for newer builds"
+                                                       Text="Check github releases for newer builds"
                                                        FontSize="12"
                                                        Foreground="{ThemeResource TextSecondaryBrush}"/>
                                         </StackPanel>
                                         <Button x:Name="CheckUpdateButton"
                                                 Grid.Column="1"
-                                                AutomationProperties.Name="check for updates"
+                                                AutomationProperties.Name="Check for updates"
                                                 Style="{StaticResource BaseButtonStyle}"
                                                 Height="32"
                                                 MinHeight="32"
@@ -1251,7 +1148,7 @@
                                                 VerticalAlignment="Center"
                                                 Click="CheckUpdateButton_Click">
                                             <TextBlock x:Name="CheckUpdateButtonText"
-                                                       Text="check for updates"
+                                                       Text="Check for updates"
                                                        FontSize="12.5"
                                                        FontWeight="Medium"
                                                        VerticalAlignment="Center"/>
@@ -1286,7 +1183,7 @@
                     </Grid.ColumnDefinitions>
 
                     <Button x:Name="ViewerBackButton"
-                            AutomationProperties.Name="back to gallery"
+                            AutomationProperties.Name="Back to gallery"
                             Style="{StaticResource BaseButtonStyle}"
                             Height="32"
                             MinHeight="32"
@@ -1303,7 +1200,7 @@
                                   VerticalAlignment="Center"
                                   Data="M 19,12 H 5 M 11,6 L 5,12 L 11,18"/>
                             <TextBlock x:Name="ViewerBackLabel"
-                                       Text="back to gallery"
+                                       Text="Back to gallery"
                                        FontSize="12.5"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
@@ -1325,7 +1222,7 @@
                                 Padding="9,0"
                                 VerticalAlignment="Center">
                             <TextBlock x:Name="ViewerCategoryText"
-                                       Text="desktop"
+                                       Text="Desktop"
                                        FontSize="12"
                                        FontWeight="Medium"
                                        MaxWidth="200"
@@ -1346,7 +1243,7 @@
                                 Spacing="8"
                                 VerticalAlignment="Center">
                         <Button x:Name="ViewerEditButton"
-                                AutomationProperties.Name="edit"
+                                AutomationProperties.Name="Edit"
                                 Style="{StaticResource BaseButtonStyle}"
                                 Height="32"
                                 MinHeight="32"
@@ -1363,7 +1260,7 @@
                                       VerticalAlignment="Center"
                                       Data="M 8.5,12.5 L 11.5,15.5 L 21.3,5.7 A 2.1,2.1 0 0 0 18.3,2.7 Z M 9.8,14.2 C 7.2,14.2 6.2,16.2 5.3,17.8 C 4.7,19 3.6,19.7 2.6,20 C 4.8,20.8 7.3,20.7 9.1,19.3 C 10.5,18.2 11.2,16.7 10.8,15.2"/>
                                 <TextBlock x:Name="ViewerEditText"
-                                           Text="edit"
+                                           Text="Edit"
                                            FontSize="12.5"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -1385,13 +1282,13 @@
                                       VerticalAlignment="Center"
                                       Data="M 3,6.5 A 1.5,1.5 0 0 1 4.5,5 H 9.5 L 11.5,7.5 H 19.5 A 1.5,1.5 0 0 1 21,9 V 18 A 1.5,1.5 0 0 1 19.5,19.5 H 4.5 A 1.5,1.5 0 0 1 3,18 Z"/>
                                 <TextBlock x:Name="ViewerFolderText"
-                                           Text="show in folder"
+                                           Text="Show in folder"
                                            FontSize="12.5"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="ViewerDeleteButton"
-                                AutomationProperties.Name="delete"
+                                AutomationProperties.Name="Delete"
                                 Style="{StaticResource DangerButtonStyle}"
                                 Height="32"
                                 MinHeight="32"
@@ -1408,7 +1305,7 @@
                                       VerticalAlignment="Center"
                                       Data="M 3.5,6 H 20.5 M 8.5,6 V 4 A 1,1 0 0 1 9.5,3 H 14.5 A 1,1 0 0 1 15.5,4 V 6 M 5.5,6 V 19.5 A 1.5,1.5 0 0 0 7,21 H 17 A 1.5,1.5 0 0 0 18.5,19.5 V 6 M 10,10.5 V 16.5 M 14,10.5 V 16.5"/>
                                 <TextBlock x:Name="ViewerDeleteText"
-                                           Text="delete"
+                                           Text="Delete"
                                            FontSize="12.5"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -1439,7 +1336,7 @@
                             </Grid.ColumnDefinitions>
 
                             <Button x:Name="EditPlayPauseButton"
-                                    AutomationProperties.Name="play pause trim preview"
+                                    AutomationProperties.Name="Play pause trim preview"
                                     Style="{StaticResource BaseButtonStyle}"
                                     Width="32" Height="30"
                                     Padding="0"
@@ -1560,13 +1457,13 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBlock Text="crop"
+                                <TextBlock Text="Crop"
                                            FontSize="12"
                                            Foreground="{ThemeResource TextTertiaryBrush}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,4,0"/>
                                 <Button x:Name="CropRatioFreeButton"
-                                        Content="free"
+                                        Content="Free"
                                         Tag="free"
                                         Height="28"
                                         MinHeight="28"
@@ -1636,14 +1533,14 @@
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <TextBlock x:Name="EditExportProgressText"
                                            Visibility="Collapsed"
-                                           Text="saving 0%"
+                                           Text="Saving 0%"
                                            Style="{StaticResource Mono}"
                                            FontSize="12"
                                            Foreground="{ThemeResource TextSecondaryBrush}"
                                            VerticalAlignment="Center"/>
                                 <Button x:Name="EditCancelExportButton"
                                         Visibility="Collapsed"
-                                        Content="cancel"
+                                        Content="Cancel"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Height="28"
                                         MinHeight="28"
@@ -1651,7 +1548,7 @@
                                         CornerRadius="4"
                                         Click="EditCancelExportButton_Click"/>
                                 <Button x:Name="EditResetButton"
-                                        Content="reset"
+                                        Content="Reset"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Height="28"
                                         MinHeight="28"
@@ -1659,7 +1556,7 @@
                                         CornerRadius="4"
                                         Click="EditResetButton_Click"/>
                                 <Button x:Name="EditSaveCopyButton"
-                                        AutomationProperties.Name="save as new video"
+                                        AutomationProperties.Name="Save as new video"
                                         Style="{StaticResource AccentButtonStyle}"
                                         Height="28"
                                         MinHeight="28"
@@ -1667,7 +1564,7 @@
                                         CornerRadius="4"
                                         Click="EditSaveCopyButton_Click">
                                     <TextBlock x:Name="EditSaveCopyText"
-                                               Text="save copy"
+                                               Text="Save copy"
                                                FontSize="12"
                                                FontWeight="SemiBold"
                                                VerticalAlignment="Center"/>
@@ -1704,9 +1601,9 @@
         <!-- TOP FULL-WIDTH HEADER BAR (solid surface, zero blur)             -->
         <!-- ================================================================ -->
         <Grid x:Name="FloatingHeader"
-              Height="52"
+              Height="56"
               VerticalAlignment="Top"
-              Background="{ThemeResource HeaderBarBrush}"
+              Background="Transparent"
               BorderBrush="{ThemeResource HairlineBrush}"
               BorderThickness="0,0,0,1"
               Padding="16,0,8,0"
@@ -1736,7 +1633,7 @@
                              Fill="{ThemeResource TextTertiaryBrush}"
                              VerticalAlignment="Center"/>
                     <TextBlock x:Name="StatusHeadline"
-                               Text="stopped"
+                               Text="Stopped"
                                FontSize="11.5"
                                FontWeight="Medium"
                                Foreground="{ThemeResource TextSecondaryBrush}"
@@ -1749,28 +1646,23 @@
                     Grid.Column="1"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Background="{ThemeResource NavSelectorTrayBrush}"
-                    BorderBrush="{ThemeResource ControlElevationBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6"
-                    Height="36"
-                    Padding="3">
+                    Height="42"
+                    Padding="0,4">
                 <Grid>
                     <!-- Smooth horizontal Composition pill -->
                     <Border x:Name="NavActivePill"
-                            Width="92"
-                            Height="28"
-                            CornerRadius="4"
+                            Width="22"
+                            Height="3"
+                            CornerRadius="2"
+                            Margin="35,0,0,0"
                             HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Background="{ThemeResource NavActivePillBrush}"
-                            BorderBrush="{ThemeResource NavActivePillBorderBrush}"
-                            BorderThickness="1"
+                            VerticalAlignment="Bottom"
+                            Background="{ThemeResource AccentIndicatorBrush}"
                             IsHitTestVisible="False"/>
 
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <Button x:Name="NavHomeButton"
-                                AutomationProperties.Name="home"
+                                AutomationProperties.Name="Home"
                                 Width="92"
                                 Style="{StaticResource NavRailButtonStyle}"
                                 Click="NavHomeButton_Click">
@@ -1785,14 +1677,14 @@
                                       VerticalAlignment="Center"
                                       Data="M 3,10.5 L 12,3 L 21,10.5 V 19.5 A 1.5,1.5 0 0 1 19.5,21 H 15 V 14.5 H 9 V 21 H 4.5 A 1.5,1.5 0 0 1 3,19.5 Z"/>
                                 <TextBlock x:Name="NavHomeText"
-                                           Text="home"
+                                           Text="Home"
                                            FontSize="12.5"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
                         <Button x:Name="NavSettingsButton"
-                                AutomationProperties.Name="settings"
+                                AutomationProperties.Name="Settings"
                                 Width="92"
                                 Style="{StaticResource NavRailButtonStyle}"
                                 Click="NavSettingsButton_Click">
@@ -1807,7 +1699,7 @@
                                       VerticalAlignment="Center"
                                       Data="M 19.4,15 A 1.65,1.65 0 0 0 19.73,16.82 L 19.79,16.88 A 2,2 0 1 1 16.96,19.71 L 16.9,19.65 A 1.65,1.65 0 0 0 15.08,19.32 A 1.65,1.65 0 0 0 14,20.85 V 21 A 2,2 0 1 1 10,21 V 20.91 A 1.65,1.65 0 0 0 8.92,19.4 A 1.65,1.65 0 0 0 7.1,19.73 L 7.04,19.79 A 2,2 0 1 1 4.21,16.96 L 4.27,16.9 A 1.65,1.65 0 0 0 4.6,15.08 A 1.65,1.65 0 0 0 3.15,14 H 3 A 2,2 0 1 1 3,10 H 3.09 A 1.65,1.65 0 0 0 4.6,8.92 A 1.65,1.65 0 0 0 4.27,7.1 L 4.21,7.04 A 2,2 0 1 1 7.04,4.21 L 7.1,4.27 A 1.65,1.65 0 0 0 8.92,4.6 H 9 A 1.65,1.65 0 0 0 10,3.09 V 3 A 2,2 0 1 1 14,3 V 3.09 A 1.65,1.65 0 0 0 15.08,4.6 A 1.65,1.65 0 0 0 16.9,4.27 L 16.96,4.21 A 2,2 0 1 1 19.79,7.04 L 19.73,7.1 A 1.65,1.65 0 0 0 19.4,8.92 V 9 A 1.65,1.65 0 0 0 20.91,10 H 21 A 2,2 0 1 1 21,14 H 20.91 A 1.65,1.65 0 0 0 19.4,15 Z M 15,12 A 3,3 0 1 1 9,12 A 3,3 0 1 1 15,12 Z"/>
                                 <TextBlock x:Name="NavSettingsText"
-                                           Text="settings"
+                                           Text="Settings"
                                            FontSize="12.5"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -1824,12 +1716,12 @@
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
                 <Button x:Name="MinimizeTitleButton"
-                        AutomationProperties.Name="minimize"
+                        AutomationProperties.Name="Minimize"
                         Style="{StaticResource TitleBarIconButtonStyle}"
                         local:UiHover.HoverIconTone="Primary"
                         IsTabStop="False"
                         Click="MinimizeTitleButton_Click"
-                        ToolTipService.ToolTip="minimize">
+                        ToolTipService.ToolTip="Minimize">
                     <Path Width="10" Height="2"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"
@@ -1837,12 +1729,12 @@
                           Data="M 0,0.4 H 10 V 1.6 H 0 Z"/>
                 </Button>
                 <Button x:Name="CloseTitleButton"
-                        AutomationProperties.Name="hide to tray"
+                        AutomationProperties.Name="Hide to tray"
                         Style="{StaticResource TitleBarCloseButtonStyle}"
                         local:UiHover.HoverIconTone="White"
                         IsTabStop="False"
                         Click="CloseTitleButton_Click"
-                        ToolTipService.ToolTip="hide to tray">
+                        ToolTipService.ToolTip="Hide to tray">
                     <Path Width="10" Height="10"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"
@@ -1865,6 +1757,9 @@
 
             <!-- STATUS INFOBAR -->
             <InfoBar x:Name="StatusInfoBar"
+                     Background="{ThemeResource FloatingSurfaceBrush}"
+                     BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                     CornerRadius="8"
                      Visibility="Collapsed"
                      HorizontalAlignment="Center"
                      MaxWidth="560"
@@ -1875,26 +1770,29 @@
 
             <!-- WEBVIEW2 RUNTIME WARNING -->
             <InfoBar x:Name="WebViewRequirementBar"
+                     Background="{ThemeResource FloatingSurfaceBrush}"
+                     BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                     CornerRadius="8"
                      Visibility="Collapsed"
                      HorizontalAlignment="Center"
                      MaxWidth="560"
                      IsOpen="False"
                      IsClosable="False"
                      Severity="Warning"
-                     Title="webview2 runtime required"
-                     Message="video playback needs microsoft edge webview2 runtime.">
+                     Title="WebView2 Runtime required"
+                     Message="Video playback requires the Microsoft Edge WebView2 Runtime.">
                 <InfoBar.ActionButton>
-                    <Button Content="download webview2" Click="DownloadWebView2Button_Click"/>
+                    <Button Content="Download webview2" Click="DownloadWebView2Button_Click"/>
                 </InfoBar.ActionButton>
             </InfoBar>
 
             <!-- FLOATING UNSAVED CHANGES BAR -->
             <Border x:Name="PendingChangesFlyout"
-                    Background="{ThemeResource FlyoutAcrylicBrush}"
+                    Background="{ThemeResource FloatingSurfaceBrush}"
                     BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="6"
-                    Height="44"
+                    CornerRadius="8"
+                    MinHeight="48"
                     HorizontalAlignment="Center"
                     Visibility="Collapsed"
                     Opacity="0">
@@ -1903,7 +1801,7 @@
                 </Border.RenderTransform>
                 <StackPanel Orientation="Horizontal" Spacing="8" Padding="16,0,8,0" VerticalAlignment="Center">
                     <Ellipse Width="8" Height="8" Fill="{ThemeResource AccentIndicatorBrush}"/>
-                    <TextBlock Text="unsaved changes"
+                    <TextBlock Text="Unsaved changes"
                                FontSize="12.5"
                                FontWeight="Medium"
                                Foreground="{ThemeResource TextPrimaryBrush}"
@@ -1915,7 +1813,7 @@
                             MinHeight="28"
                             CornerRadius="4"
                             Padding="12,0"
-                            Content="discard"
+                            Content="Discard"
                             Click="PendingDiscardButton_Click"/>
                     <Button x:Name="PendingSaveButton"
                             Style="{StaticResource AccentButtonStyle}"
@@ -1923,7 +1821,7 @@
                             MinHeight="28"
                             CornerRadius="4"
                             Padding="16,0"
-                            Content="save"
+                            Content="Save"
                             Click="PendingSaveButton_Click"/>
                 </StackPanel>
             </Border>

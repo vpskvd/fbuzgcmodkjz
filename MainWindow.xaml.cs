@@ -89,7 +89,6 @@ public partial class MainWindow : Window
     private bool _statsBaselineTaken;
     private AudioDeviceWatcher? _audioWatcher;
     private Storyboard? _dotStoryboard;
-    private bool _apertureAnimating;
     private double _navPillCurrentX;
     private bool _homeEntrancePlayed;
     private bool _inlineVideoRevealed;
@@ -156,7 +155,9 @@ public partial class MainWindow : Window
     private bool _syncingAudioToggles;
     private bool _syncingDurationCustom;
     private bool _durationCustomVisible;
-    private Storyboard? _durationWidthStoryboard;
+    private Storyboard? _durationDisclosure;
+    private Storyboard? _audioAppsDisclosure;
+    private readonly Windows.UI.ViewManagement.UISettings _uiSettings = new();
     private List<AudioAppCandidate> _audioApps = new();
     private bool _dirty;
     private bool _savingChanges;
@@ -187,7 +188,7 @@ public partial class MainWindow : Window
         _startMinimized = startMinimized;
         InitializeComponent();
 
-        Title = "instant replay";
+        Title = "Instant Replay";
         _hwnd = WindowNative.GetWindowHandle(this);
         _appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(_hwnd));
         _dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
@@ -322,7 +323,6 @@ public partial class MainWindow : Window
                 if (_appWindow.Presenter is OverlappedPresenter presenter) presenter.Minimize();
                 ShowWindow(_hwnd, SwHide);
                 _isHidden = true;
-                StopApertureAnimation();
                 NotifyRunningInBackground();
             });
         }
@@ -623,51 +623,21 @@ public partial class MainWindow : Window
 
     private void UpdateNavPillVisual(bool animate)
     {
-        // Horizontal Fluent 2.0 Selector glide between 92px tabs (4px gap => 96px step), symmetric both ways
-        double targetX = _isSettingsActive ? 96.0 : 0.0;
-        double startX = _navPillCurrentX;
-        _navPillCurrentX = targetX;
-
-        try
+        double previous = _navPillCurrentX;
+        _navPillCurrentX = _isSettingsActive ? 96 : 0;
+        if (NavActivePill.RenderTransform is not TranslateTransform indicator)
         {
-            Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(NavActivePill, true);
-            var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(NavActivePill);
-            var comp = visual.Compositor;
-            visual.CenterPoint = new Vector3(46f, 14f, 0f);
-
-            visual.StopAnimation("Translation");
-            visual.StopAnimation("Scale");
-
-            if (animate && Math.Abs(targetX - startX) > 0.5)
-            {
-                var ease = comp.CreateCubicBezierEasingFunction(new Vector2(0.22f, 1f), new Vector2(0.36f, 1f));
-                var slide = comp.CreateVector3KeyFrameAnimation();
-                slide.Duration = TimeSpan.FromMilliseconds(220);
-                slide.InsertKeyFrame(0f, new Vector3((float)startX, 0f, 0f));
-                slide.InsertKeyFrame(1f, new Vector3((float)targetX, 0f, 0f), ease);
-                visual.StartAnimation("Translation", slide);
-
-                var morph = comp.CreateVector3KeyFrameAnimation();
-                morph.Duration = TimeSpan.FromMilliseconds(220);
-                morph.InsertKeyFrame(0f, Vector3.One);
-                morph.InsertKeyFrame(0.35f, new Vector3(1.06f, 0.96f, 1f), ease);
-                morph.InsertKeyFrame(1f, Vector3.One, ease);
-                visual.StartAnimation("Scale", morph);
-            }
-            else
-            {
-                visual.Properties.InsertVector3("Translation", new Vector3((float)targetX, 0f, 0f));
-                visual.Scale = Vector3.One;
-            }
+            indicator = new TranslateTransform();
+            NavActivePill.RenderTransform = indicator;
         }
-        catch { }
-
+        if (animate && previous != _navPillCurrentX && _uiSettings.AnimationsEnabled)
+            AnimateDouble(indicator, "X", indicator.X, _navPillCurrentX, TimeSpan.FromMilliseconds(180),
+                new CubicEase { EasingMode = EasingMode.EaseOut });
+        else indicator.X = _navPillCurrentX;
         var primary = GetThemedBrush("TextPrimaryBrush");
         var secondary = GetThemedBrush("TextSecondaryBrush");
-        NavHomeButton.Foreground = !_isSettingsActive ? primary : secondary;
-        NavSettingsButton.Foreground = _isSettingsActive ? primary : secondary;
-        NavHomeIcon.Stroke = !_isSettingsActive ? primary : secondary;
-        NavSettingsIcon.Stroke = _isSettingsActive ? primary : secondary;
+        NavHomeButton.Foreground = NavHomeIcon.Stroke = _isSettingsActive ? secondary : primary;
+        NavSettingsButton.Foreground = NavSettingsIcon.Stroke = _isSettingsActive ? primary : secondary;
     }
 
     private static void StartTranslationEntrance(FrameworkElement el, Vector3 fromOffset, int delayMs, int durationMs, float fromOpacity = 0f)
@@ -726,6 +696,13 @@ public partial class MainWindow : Window
         newPage.Opacity = 0;
         newPage.Visibility = Visibility.Visible;
         if (!fadeOnly) _dq.TryEnqueue(() => ResetPageScroll(newPage));
+
+        if (!_uiSettings.AnimationsEnabled)
+        {
+            newPage.Opacity = 1;
+            if (oldPage != null) oldPage.Visibility = Visibility.Collapsed;
+            return;
+        }
 
         bool toViewer = ReferenceEquals(newPage, ViewerPage);
         bool forward = toViewer || ReferenceEquals(newPage, SettingsPage);
@@ -848,7 +825,6 @@ public partial class MainWindow : Window
         _micMeterTimer?.Stop();
         _micRefreshTimer?.Stop();
         StopDotPulse();
-        StopApertureAnimation();
         _taskbarBadge?.SetTaskbarVisible(false);
         NotifyRunningInBackground();
     }
@@ -907,159 +883,22 @@ public partial class MainWindow : Window
         }
     }
 
-    private static void StartGpu3DRotation(FrameworkElement el, float size, Vector3 axis, double seconds, bool reverse = false)
-    {
-        var comp = CompositionTarget.GetCompositorForCurrentThread();
-        var vis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(el);
-        vis.CenterPoint = new Vector3(size * 0.5f, size * 0.5f, 0f);
-        vis.RotationAxis = Vector3.Normalize(axis);
-        vis.StopAnimation("RotationAngleInDegrees");
-
-        var linear = comp.CreateLinearEasingFunction();
-        var rot = comp.CreateScalarKeyFrameAnimation();
-        rot.InsertKeyFrame(0f, reverse ? 360f : 0f);
-        rot.InsertKeyFrame(1f, reverse ? 0f : 360f, linear);
-        rot.Duration = TimeSpan.FromSeconds(seconds);
-        rot.IterationBehavior = Microsoft.UI.Composition.AnimationIterationBehavior.Forever;
-        vis.StartAnimation("RotationAngleInDegrees", rot);
-    }
-
-    private static void StartGpuScaleBreath(FrameworkElement el, float size, float minScale, float maxScale, float minOpacity, float maxOpacity, double seconds)
-    {
-        var comp = CompositionTarget.GetCompositorForCurrentThread();
-        var vis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(el);
-        vis.CenterPoint = new Vector3(size * 0.5f, size * 0.5f, 0f);
-        vis.StopAnimation("Scale");
-        vis.StopAnimation("Opacity");
-
-        var ease = comp.CreateCubicBezierEasingFunction(new Vector2(0.45f, 0f), new Vector2(0.55f, 1f));
-
-        var sc = comp.CreateVector3KeyFrameAnimation();
-        sc.InsertKeyFrame(0f, new Vector3(minScale, minScale, 1f));
-        sc.InsertKeyFrame(0.5f, new Vector3(maxScale, maxScale, 1f), ease);
-        sc.InsertKeyFrame(1f, new Vector3(minScale, minScale, 1f), ease);
-        sc.Duration = TimeSpan.FromSeconds(seconds);
-        sc.IterationBehavior = Microsoft.UI.Composition.AnimationIterationBehavior.Forever;
-        vis.StartAnimation("Scale", sc);
-
-        var op = comp.CreateScalarKeyFrameAnimation();
-        op.InsertKeyFrame(0f, minOpacity);
-        op.InsertKeyFrame(0.5f, maxOpacity, ease);
-        op.InsertKeyFrame(1f, minOpacity, ease);
-        op.Duration = TimeSpan.FromSeconds(seconds);
-        op.IterationBehavior = Microsoft.UI.Composition.AnimationIterationBehavior.Forever;
-        vis.StartAnimation("Opacity", op);
-    }
-
-    private static void StartGpuBarWave(FrameworkElement bar, float width, float height, double seconds, int delayMs, float minY, float maxY)
-    {
-        var comp = CompositionTarget.GetCompositorForCurrentThread();
-        var vis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(bar);
-        vis.CenterPoint = new Vector3(width * 0.5f, height, 0f);
-        vis.StopAnimation("Scale");
-
-        var ease = comp.CreateCubicBezierEasingFunction(new Vector2(0.45f, 0f), new Vector2(0.55f, 1f));
-        var anim = comp.CreateVector3KeyFrameAnimation();
-        anim.InsertKeyFrame(0f, new Vector3(1f, minY, 1f));
-        anim.InsertKeyFrame(0.5f, new Vector3(1f, maxY, 1f), ease);
-        anim.InsertKeyFrame(1f, new Vector3(1f, minY, 1f), ease);
-        anim.Duration = TimeSpan.FromSeconds(seconds);
-        anim.DelayTime = TimeSpan.FromMilliseconds(delayMs);
-        anim.IterationBehavior = Microsoft.UI.Composition.AnimationIterationBehavior.Forever;
-        vis.StartAnimation("Scale", anim);
-    }
-
-    private static void StopGpuLayer(FrameworkElement el, float size, float parkedOpacity)
-    {
-        try
-        {
-            var vis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(el);
-            vis.StopAnimation("RotationAngleInDegrees");
-            vis.StopAnimation("Scale");
-            vis.StopAnimation("Opacity");
-            vis.CenterPoint = new Vector3(size * 0.5f, size * 0.5f, 0f);
-            vis.RotationAxis = Vector3.UnitZ;
-            vis.RotationAngleInDegrees = 0f;
-            vis.Scale = Vector3.One;
-            vis.Opacity = parkedOpacity;
-        }
-        catch { }
-    }
-
-    private void StartApertureAnimation()
-    {
-        if (_apertureAnimating) return;
-        _apertureAnimating = true;
-        try
-        {
-            HeroPrismOuter.Opacity = 0.85;
-            HeroPrismMid.Opacity = 0.88;
-            HeroPrismCore.Opacity = 1.0;
-
-            StartGpu3DRotation(HeroPrismOuter, 36f, new Vector3(0.42f, 1.0f, 0.25f), 4.6, reverse: false);
-            StartGpu3DRotation(HeroPrismMid, 24f, new Vector3(1.0f, -0.52f, 0.35f), 3.4, reverse: true);
-            StartGpu3DRotation(HeroPrismCore, 28f, new Vector3(-0.30f, 0.82f, 1.0f), 6.2, reverse: false);
-            StartGpuScaleBreath(HeroPrismCore, 28f, 0.90f, 1.08f, 0.85f, 1.0f, 2.2);
-            StartGpuScaleBreath(HeroCoreGlow, 42f, 0.82f, 1.16f, 0.22f, 0.65f, 1.8);
-
-            StartGpuBarWave(HeroBar1, 2f, 6f, 1.05, 0, 0.4f, 1.25f);
-            StartGpuBarWave(HeroBar2, 2f, 8f, 0.88, 180, 0.35f, 1.15f);
-            StartGpuBarWave(HeroBar3, 2f, 7f, 1.16, 360, 0.45f, 1.25f);
-            StartGpuBarWave(HeroBar4, 2f, 5f, 0.96, 120, 0.4f, 1.3f);
-        }
-        catch { }
-    }
-
-    private void StopApertureAnimation()
-    {
-        _apertureAnimating = false;
-        StopGpuLayer(HeroPrismOuter, 36f, 0.45f);
-        StopGpuLayer(HeroPrismMid, 24f, 0.50f);
-        StopGpuLayer(HeroPrismCore, 28f, 0.72f);
-        StopGpuLayer(HeroCoreGlow, 42f, 0f);
-        StopGpuLayer(HeroBar1, 2f, 0.55f);
-        StopGpuLayer(HeroBar2, 2f, 0.55f);
-        StopGpuLayer(HeroBar3, 2f, 0.55f);
-        StopGpuLayer(HeroBar4, 2f, 0.55f);
-    }
-
     private void PlayHeroSaveFlash()
     {
-        try
+        if (!_uiSettings.AnimationsEnabled) return;
+        var flash = new DoubleAnimationUsingKeyFrames();
+        flash.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = TimeSpan.Zero, Value = 0 });
+        flash.KeyFrames.Add(new LinearDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(80), Value = 1 });
+        flash.KeyFrames.Add(new EasingDoubleKeyFrame
         {
-            var sb = new Storyboard();
-            var easeOut = new CubicEase { EasingMode = EasingMode.EaseOut };
-
-            var flash = new DoubleAnimationUsingKeyFrames();
-            flash.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = TimeSpan.Zero, Value = 0.0 });
-            flash.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(95), Value = 0.85, EasingFunction = easeOut });
-            flash.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(440), Value = 0.0, EasingFunction = easeOut });
-            Storyboard.SetTarget(flash, HeroSaveFlash);
-            Storyboard.SetTargetProperty(flash, "Opacity");
-            sb.Children.Add(flash);
-            sb.Begin();
-
-            var comp = CompositionTarget.GetCompositorForCurrentThread();
-            var burstVis = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(HeroSaveBurstRing);
-            burstVis.CenterPoint = new Vector3(31f, 31f, 0f);
-            burstVis.StopAnimation("Scale");
-            burstVis.StopAnimation("Opacity");
-
-            var curve = comp.CreateCubicBezierEasingFunction(new Vector2(0.22f, 1f), new Vector2(0.36f, 1f));
-            var sc = comp.CreateVector3KeyFrameAnimation();
-            sc.InsertKeyFrame(0f, new Vector3(0.76f, 0.76f, 1f));
-            sc.InsertKeyFrame(1f, new Vector3(1.12f, 1.12f, 1f), curve);
-            sc.Duration = TimeSpan.FromMilliseconds(420);
-
-            var op = comp.CreateScalarKeyFrameAnimation();
-            op.InsertKeyFrame(0f, 0.95f);
-            op.InsertKeyFrame(1f, 0f, curve);
-            op.Duration = TimeSpan.FromMilliseconds(420);
-
-            burstVis.StartAnimation("Scale", sc);
-            burstVis.StartAnimation("Opacity", op);
-        }
-        catch { }
+            KeyTime = TimeSpan.FromMilliseconds(320), Value = 0,
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+        });
+        Storyboard.SetTarget(flash, HeroSaveFlash);
+        Storyboard.SetTargetProperty(flash, "Opacity");
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(flash);
+        storyboard.Begin();
     }
 
     private static string ResolveIconPath()
@@ -1143,7 +982,6 @@ public partial class MainWindow : Window
         if (_engine.IsRunning && !_engine.IsPaused)
         {
             StartDotPulse();
-            StartApertureAnimation();
         }
     }
 
@@ -1265,7 +1103,6 @@ public partial class MainWindow : Window
             if (!_engine.IsPaused && !_isHidden)
             {
                 StartDotPulse();
-                StartApertureAnimation();
             }
             ApplyStartStopLook(true);
             _hasErrored = false;
@@ -1273,7 +1110,6 @@ public partial class MainWindow : Window
         }
         else
         {
-            StopApertureAnimation();
             var muted = GetThemedBrush("TextTertiaryBrush");
             RecDot.Fill = muted;
             StatusHeadline.Text = "stopped";
@@ -1323,7 +1159,6 @@ public partial class MainWindow : Window
         if (_engine.IsPaused)
         {
             StopDotPulse();
-            StopApertureAnimation();
             StatusHeadline.Text = _engine.TargetState;
             var warnBrush = GetThemedBrush("ErrorBrush");
             RecDot.Fill = warnBrush;
@@ -1340,7 +1175,6 @@ public partial class MainWindow : Window
         if (healthy) { SetRunningVisual(true); return; }
 
         StopDotPulse();
-        StopApertureAnimation();
         var err = GetThemedBrush("ErrorBrush");
         RecDot.Fill = err;
         StatusHeadline.Text = "error";
@@ -1681,7 +1515,6 @@ public partial class MainWindow : Window
 
     private async void OpenViewer(ReplayItem item)
     {
-        if (item.IsEdited) VideoEditor.TryRepairTruncatedFirstAacPacket(item.VideoPath);
         StopViewerPlayback(destroy: false);
         _viewerItem = item;
         _playerTime = 0;
@@ -1843,7 +1676,7 @@ public partial class MainWindow : Window
 
     private void SendAccentInline() => SendScriptInline($"receiveCommand({{\"c\":\"accent\",\"v\":\"{GetAccentHex()}\"}})");
 
-    private string GetAccentHex() => "#cccccc";
+    private string GetAccentHex() => _settings.DarkMode ? "#60CDFF" : "#0067C0";
 
     private void SendScriptInline(string script)
     {
@@ -2716,62 +2549,47 @@ public partial class MainWindow : Window
 
     private void SetDurationCustomVisible(bool show, bool animate)
     {
-        if (DurationCustomWrap.RenderTransform is not TranslateTransform slide)
-        {
-            slide = new TranslateTransform();
-            DurationCustomWrap.RenderTransform = slide;
-        }
-
-        const double expandedWidth = 248.0;
-        const double compactWidth = 144.0;
-        double targetWidth = show ? compactWidth : expandedWidth;
-
-        _durationWidthStoryboard?.Stop();
         _durationCustomVisible = show;
+        DurationCustomBox.IsEnabled = show;
+        if (show) Grid.SetColumnSpan(DurationCombo, 1);
+        SetDisclosure(DurationCustomWrap, ref _durationDisclosure, show, animate, () => Grid.SetColumnSpan(DurationCombo, 2));
+    }
 
-        if (!animate)
+    private void SetDisclosure(FrameworkElement panel, ref Storyboard? active, bool show, bool animate, Action? afterHide = null)
+    {
+        double from = panel.Visibility == Visibility.Visible ? panel.Opacity : 0;
+        active?.Stop();
+        active = null;
+        panel.IsHitTestVisible = show;
+        panel.Opacity = show ? 1 : 0;
+        if (!animate || !_uiSettings.AnimationsEnabled || from == panel.Opacity)
         {
-            DurationCombo.Width = targetWidth;
-            DurationCustomWrap.Opacity = show ? 1.0 : 0.0;
-            slide.X = show ? 0.0 : 18.0;
-            DurationCustomWrap.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            panel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            if (!show) afterHide?.Invoke();
             return;
         }
 
-        double fromWidth = double.IsNaN(DurationCombo.Width) ? (show ? expandedWidth : compactWidth) : DurationCombo.Width;
-        var widthAnim = new DoubleAnimation
+        panel.Visibility = Visibility.Visible;
+        var animation = new DoubleAnimation
         {
-            From = fromWidth,
-            To = targetWidth,
-            Duration = TimeSpan.FromMilliseconds(220),
-            EnableDependentAnimation = true,
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            From = from, To = panel.Opacity, FillBehavior = FillBehavior.Stop,
+            Duration = TimeSpan.FromMilliseconds(show ? 180 : 120),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
         };
-        Storyboard.SetTarget(widthAnim, DurationCombo);
-        Storyboard.SetTargetProperty(widthAnim, "Width");
-        _durationWidthStoryboard = new Storyboard();
-        _durationWidthStoryboard.Children.Add(widthAnim);
-        _durationWidthStoryboard.Begin();
-
-        if (show)
+        Storyboard.SetTarget(animation, panel);
+        Storyboard.SetTargetProperty(animation, "Opacity");
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(animation);
+        storyboard.Completed += (_, _) =>
         {
-            DurationCustomWrap.Visibility = Visibility.Visible;
-            AnimateDouble(DurationCustomWrap, "Opacity", DurationCustomWrap.Opacity, 1.0, TimeSpan.FromMilliseconds(220),
-                easing: new CubicEase { EasingMode = EasingMode.EaseOut });
-            AnimateDouble(slide, "X", Math.Abs(slide.X) < 0.5 ? 18.0 : slide.X, 0.0, TimeSpan.FromMilliseconds(220),
-                easing: new CubicEase { EasingMode = EasingMode.EaseOut });
-        }
-        else
-        {
-            AnimateDouble(slide, "X", slide.X, 18.0, TimeSpan.FromMilliseconds(160),
-                easing: new CubicEase { EasingMode = EasingMode.EaseIn });
-            AnimateDouble(DurationCustomWrap, "Opacity", DurationCustomWrap.Opacity, 0.0, TimeSpan.FromMilliseconds(160),
-                easing: new CubicEase { EasingMode = EasingMode.EaseIn },
-                onCompleted: () =>
-                {
-                    if (!_durationCustomVisible) DurationCustomWrap.Visibility = Visibility.Collapsed;
-                });
-        }
+            if (!show && !panel.IsHitTestVisible)
+            {
+                panel.Visibility = Visibility.Collapsed;
+                afterHide?.Invoke();
+            }
+        };
+        active = storyboard;
+        storyboard.Begin();
     }
 
     private void DurationCustomBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -2854,7 +2672,8 @@ public partial class MainWindow : Window
         SystemAudioSourceSection.Visibility = _settings.RecordSystemAudio ? Visibility.Visible : Visibility.Collapsed;
         bool selectedMode = _settings.RecordSystemAudio &&
             string.Equals(_settings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase);
-        SelectedAudioAppsPanel.Visibility = selectedMode ? Visibility.Visible : Visibility.Collapsed;
+        SetDisclosure(SelectedAudioAppsPanel, ref _audioAppsDisclosure, selectedMode,
+            animate: !_syncingAudioToggles && _settings.RecordSystemAudio);
     }
 
     private void InitEncoderSegments() =>
@@ -2986,7 +2805,7 @@ public partial class MainWindow : Window
                 removeBtn.Click += (_, _) =>
                 {
                     _settings.SpecificWindows = _settings.SpecificWindows.Where(r => r != rule).ToList();
-                    _settings.Save();
+                    _settings.SaveFields(nameof(Settings.SpecificWindows));
                     _engine.ReloadGameRules();
                     UpdateGamesSummary();
                     RebuildList();
@@ -3053,7 +2872,7 @@ public partial class MainWindow : Window
                 return;
             }
             _settings.SpecificWindows = [.. _settings.SpecificWindows, new GameRule(nm.ToLowerInvariant(), exe.ToLowerInvariant(), kw.ToLowerInvariant())];
-            _settings.Save();
+            _settings.SaveFields(nameof(Settings.SpecificWindows));
             _engine.ReloadGameRules();
             UpdateGamesSummary();
             nameBox.Text = exeBox.Text = kwBox.Text = errText.Text = "";
@@ -3434,9 +3253,9 @@ public partial class MainWindow : Window
     private async void CheckUpdateButton_Click(object sender, RoutedEventArgs e)
     {
         if (_checkingUpdate || _downloadingUpdate) return;
-        if (_availableUpdate is { UpdateAvailable: true, DownloadUrl: { } url })
+        if (_availableUpdate is { UpdateAvailable: true } update)
         {
-            await DownloadAndInstallUpdateAsync(url, _availableUpdate.AssetName);
+            await DownloadAndInstallUpdateAsync(update);
             return;
         }
         await CheckForUpdatesAsync(userInitiated: true);
@@ -3472,8 +3291,10 @@ public partial class MainWindow : Window
                 CheckUpdateButton.Style = (Style)Application.Current.Resources["BaseButtonStyle"];
                 CheckUpdateButtonText.Text = "check for updates";
                 UpdateStatusText.Text = res.NoReleasesYet
-                    ? "up to date (no published releases yet)"
-                    : "you are on the latest version";
+                    ? "No releases published yet"
+                    : res.LatestVersion > res.CurrentVersion
+                        ? "A newer release has no verifiable installer"
+                        : "You are on the latest version";
             }
         }
         catch (Exception ex)
@@ -3492,7 +3313,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task DownloadAndInstallUpdateAsync(string downloadUrl, string? assetName)
+    private async Task DownloadAndInstallUpdateAsync(UpdateCheckResult update)
     {
         _downloadingUpdate = true;
         CheckUpdateButton.IsEnabled = false;
@@ -3509,7 +3330,7 @@ public partial class MainWindow : Window
 
         try
         {
-            string installerPath = await AppUpdater.DownloadInstallerAsync(downloadUrl, assetName, progress);
+            string installerPath = await AppUpdater.DownloadInstallerAsync(update, progress);
             UpdateStatusText.Text = "launching installer...";
             CheckUpdateButtonText.Text = "restarting...";
             AppUpdater.LaunchInstaller(installerPath);
@@ -3654,7 +3475,7 @@ public partial class MainWindow : Window
         PendingSaveButton.IsEnabled = false;
         PendingDiscardButton.IsEnabled = false;
 
-        ShowInfoBar(InfoBarSeverity.Informational, "saving changes", "applying settings and restarting buffer...");
+        ShowInfoBar(InfoBarSeverity.Informational, "Saving changes", "Applying settings and restarting the replay buffer…");
 
         bool ok = true;
         bool restarted = false;
@@ -3695,6 +3516,7 @@ public partial class MainWindow : Window
             PendingSaveButton.IsEnabled = true;
             PendingDiscardButton.IsEnabled = true;
             _savingChanges = false;
+            if (StatusInfoBar.IsOpen && StatusInfoBar.Severity != InfoBarSeverity.Error) _infoBarTimer?.Start();
             SetRunningVisual(_engine.IsRunning);
         }
     }
@@ -3715,7 +3537,7 @@ public partial class MainWindow : Window
         StatusInfoBar.IsOpen = true;
         EnsureInfoBarTimer();
         _infoBarTimer!.Stop();
-        _infoBarTimer.Start();
+        if (!_savingChanges && severity != InfoBarSeverity.Error) _infoBarTimer.Start();
     }
 
     private void ClearInfoBar()
@@ -3855,7 +3677,6 @@ public partial class MainWindow : Window
         _audioWatcher?.Dispose();
         Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
         StopDotPulse();
-        StopApertureAnimation();
         StopViewerPlayback(destroy: true);
         EnableWindow(_hwnd, true);
         _engine.Stop();

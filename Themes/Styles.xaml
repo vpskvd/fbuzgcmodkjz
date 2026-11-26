@@ -7,39 +7,45 @@
     <!-- TYPOGRAPHY HIERARCHY (Segoe UI Variable, clean weight 400-600)      -->
     <!-- ================================================================== -->
     <Style TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
+    </Style>
+
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimaryBrush}"/>
     </Style>
 
     <Style x:Key="DisplayTitle" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI, sans-serif"/>
-        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display"/>
+        <Setter Property="FontSize" Value="28"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{ThemeResource TextPrimaryBrush}"/>
     </Style>
 
     <Style x:Key="SectionTitle" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
-        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
+        <Setter Property="FontSize" Value="20"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{ThemeResource TextPrimaryBrush}"/>
     </Style>
 
     <Style x:Key="SettingGroupHeader" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
+        <Setter Property="FontSize" Value="16"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimaryBrush}"/>
     </Style>
 
     <Style x:Key="Mono" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
         <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}"/>
     </Style>
 
     <Style x:Key="Caption" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
         <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}"/>
@@ -60,7 +66,7 @@
         <Setter Property="Height" Value="36"/>
         <Setter Property="MinHeight" Value="36"/>
         <Setter Property="Padding" Value="16,0"/>
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -140,7 +146,7 @@
         <Setter Property="Height" Value="32"/>
         <Setter Property="MinHeight" Value="32"/>
         <Setter Property="Padding" Value="12,0"/>
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -234,7 +240,7 @@
         <Setter Property="Height" Value="36"/>
         <Setter Property="MinHeight" Value="36"/>
         <Setter Property="Padding" Value="16,0"/>
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -316,7 +322,7 @@
         <Setter Property="Padding" Value="12,0"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Template">
@@ -564,11 +570,11 @@
     <Style TargetType="local:SettingRow">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="MinHeight" Value="52"/>
+        <Setter Property="MinHeight" Value="56"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:SettingRow">
-                    <Grid MinHeight="52"
+                    <Grid MinHeight="56"
                           Padding="0,8"
                           ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
@@ -576,11 +582,11 @@
                             <ColumnDefinition Width="248"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{TemplateBinding Label}"
-                                   FontSize="13.5"
+                                   FontSize="14"
                                    FontWeight="Normal"
                                    Foreground="{ThemeResource TextPrimaryBrush}"
                                    VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   TextWrapping="Wrap"/>
                         <ContentPresenter Grid.Column="1"
                                           VerticalAlignment="Center"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
@@ -937,7 +943,7 @@
         <Setter Property="MinHeight" Value="32"/>
         <Setter Property="MinWidth" Value="0"/>
         <Setter Property="FontSize" Value="14"/>
-        <Setter Property="Padding" Value="10,0,22,1"/>
+        <Setter Property="Padding" Value="12,0,24,0"/>
         <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">

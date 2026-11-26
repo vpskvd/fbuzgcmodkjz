@@ -97,7 +97,10 @@ public static class VideoEditor
                 await ExportWithOptionsAsync(sourcePathToUse, tempPath, request, useHardware: false, setGopProperty: false, progress, ct);
             }
 
+            ct.ThrowIfCancellationRequested();
+            TryRepairTruncatedFirstAacPacket(tempPath);
             TryOptimizeFastStart(tempPath);
+            ct.ThrowIfCancellationRequested();
             File.Move(tempPath, request.OutputPath, overwrite: false);
             progress?.Report(100.0);
         }
@@ -257,7 +260,7 @@ public static class VideoEditor
     /// the start or end stereo AAC packet mid-frame (&lt; 1024 samples).
     /// Replaces damaged boundary samples in-place with an ISO AAC-LC stereo silence frame + trailing zeros.
     /// </summary>
-    public static bool TryRepairTruncatedFirstAacPacket(string filePath)
+    private static bool TryRepairTruncatedFirstAacPacket(string filePath)
     {
         try
         {

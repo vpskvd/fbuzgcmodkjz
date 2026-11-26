@@ -1,5 +1,10 @@
 #define MyAppName "Instant Replay"
-#define MyAppVersion "1.0.5"
+#ifndef MyAppVersion
+  #error MyAppVersion must be supplied by build.ps1
+#endif
+#ifndef PublishSource
+  #define PublishSource "..\build"
+#endif
 #define MyAppPublisher "Instant Replay"
 #define MyAppExeName "replay.exe"
 #define MyAppUrl "https://github.com/vpskvd/fbuzgcmodkjz"
@@ -16,6 +21,9 @@ AppUpdatesURL={#MyAppUrl}/releases
 DefaultDirName={localappdata}\Programs\InstantReplay
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+MinVersion=10.0.19041
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\dist
@@ -27,7 +35,7 @@ SolidCompression=yes
 WizardStyle=modern
 DisableWelcomePage=no
 ShowLanguageDialog=no
-CloseApplications=force
+CloseApplications=yes
 CloseApplicationsFilter=replay.exe
 RestartApplications=no
 
@@ -38,7 +46,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\build\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#PublishSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -336,11 +344,8 @@ begin
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
-var
-  ResCode: Integer;
 begin
   Result := '';
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM replay.exe /F /T', '', SW_HIDE, ewWaitUntilTerminated, ResCode);
   if WizardSilent and (not DotNetChecked) then
   begin
     if not EnsurePrereqs(Result) then

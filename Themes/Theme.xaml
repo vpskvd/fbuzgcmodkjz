@@ -8,36 +8,27 @@
     <ResourceDictionary.ThemeDictionaries>
 
         <!-- ================================================================ -->
-        <!-- DARK MODE (Pure Monochrome Dark Slate — Zero Blur, Zero Color)   -->
+        <!-- DARK THEME   -->
         <!-- ================================================================ -->
         <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="BgBrush" Color="#111317"/>
-            <SolidColorBrush x:Key="HeaderBarBrush" Color="#14161B"/>
-            <SolidColorBrush x:Key="FlyoutAcrylicBrush" Color="#1D2028"/>
+            <SolidColorBrush x:Key="BgBrush" Color="#202020"/>
+            <SolidColorBrush x:Key="HeaderBarBrush" Color="#202020"/>
+            <SolidColorBrush x:Key="FloatingSurfaceBrush" Color="#2D2D2D"/>
 
-            <SolidColorBrush x:Key="SurfaceBrush" Color="#181B21"/>
-            <SolidColorBrush x:Key="HeroCardBrush" Color="#1B1E25"/>
-            <SolidColorBrush x:Key="CardSecondaryBrush" Color="#15181E"/>
-            <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#22262E"/>
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#292929"/>
+            <SolidColorBrush x:Key="HeroCardBrush" Color="#292929"/>
+            <SolidColorBrush x:Key="CardSecondaryBrush" Color="#232323"/>
+            <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#303030"/>
             <SolidColorBrush x:Key="TrackBrush" Color="#1AFFFFFF"/>
             <SolidColorBrush x:Key="HairlineBrush" Color="#14FFFFFF"/>
 
             <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#1AFFFFFF"/>
             <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#24FFFFFF"/>
 
-            <!-- Header Navigation Tray & Selected Tab -->
-            <SolidColorBrush x:Key="NavSelectorTrayBrush" Color="#191C23"/>
-            <SolidColorBrush x:Key="NavActivePillBrush" Color="#262A34"/>
-            <SolidColorBrush x:Key="NavActivePillBorderBrush" Color="#2CFFFFFF"/>
 
-            <RadialGradientBrush x:Key="HeroCoreGlowBrush" Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
-                <GradientStop Color="#2CFFFFFF" Offset="0"/>
-                <GradientStop Color="#12FFFFFF" Offset="0.55"/>
-                <GradientStop Color="#00FFFFFF" Offset="1"/>
-            </RadialGradientBrush>
 
             <!-- Control Fills & Overlay States -->
-            <SolidColorBrush x:Key="ControlFillBrush" Color="#20242D"/>
+            <SolidColorBrush x:Key="ControlFillBrush" Color="#353535"/>
             <SolidColorBrush x:Key="ControlHoverOverlayBrush" Color="#12FFFFFF"/>
             <SolidColorBrush x:Key="ControlPressOverlayBrush" Color="#1C000000"/>
             <SolidColorBrush x:Key="SubtleHoverOverlayBrush" Color="#0EFFFFFF"/>
@@ -45,40 +36,37 @@
             <SolidColorBrush x:Key="AccentHoverOverlayBrush" Color="#14FFFFFF"/>
             <SolidColorBrush x:Key="AccentPressOverlayBrush" Color="#22000000"/>
 
-            <!-- Monochrome Tonal Actions (no loud bright color accents) -->
-            <SolidColorBrush x:Key="AccentBrush" Color="#2B303B"/>
-            <SolidColorBrush x:Key="AccentHoverBrush" Color="#343A47"/>
-            <SolidColorBrush x:Key="AccentPressedBrush" Color="#222630"/>
-            <SolidColorBrush x:Key="AccentTextBrush" Color="#F2F4F8"/>
-            <SolidColorBrush x:Key="AccentIndicatorBrush" Color="#B8BECB"/>
-            <SolidColorBrush x:Key="AccentDimBrush" Color="#18FFFFFF"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#60CDFF"/>
+            <SolidColorBrush x:Key="AccentTextBrush" Color="#00263A"/>
+            <SolidColorBrush x:Key="AccentIndicatorBrush" Color="#60CDFF"/>
+            <SolidColorBrush x:Key="AccentDimBrush" Color="#2560CDFF"/>
             <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#32FFFFFF"/>
 
             <!-- Quiet Neutral Secondary Buttons (stop / delete) -->
-            <SolidColorBrush x:Key="RecBrush" Color="#D6DBE4"/>
+            <SolidColorBrush x:Key="RecBrush" Color="#FF99A4"/>
             <SolidColorBrush x:Key="DangerFillBrush" Color="#20242D"/>
             <SolidColorBrush x:Key="DangerBorderBrush" Color="#26FFFFFF"/>
-            <SolidColorBrush x:Key="DangerTextBrush" Color="#C8CDD8"/>
+            <SolidColorBrush x:Key="DangerTextBrush" Color="#FFB3BB"/>
             <SolidColorBrush x:Key="DangerHoverOverlayBrush" Color="#14FFFFFF"/>
             <SolidColorBrush x:Key="DangerPressOverlayBrush" Color="#20000000"/>
 
-            <SolidColorBrush x:Key="ErrorBrush" Color="#B8BECB"/>
+            <SolidColorBrush x:Key="ErrorBrush" Color="#FF99A4"/>
             <SolidColorBrush x:Key="WarningBgBrush" Color="#14FFFFFF"/>
             <SolidColorBrush x:Key="WarningBorderBrush" Color="#24FFFFFF"/>
-            <SolidColorBrush x:Key="SuccessBrush" Color="#D6DBE4"/>
+            <SolidColorBrush x:Key="SuccessBrush" Color="#6CCB5F"/>
 
             <!-- Text Ink Ramp -->
             <SolidColorBrush x:Key="DefaultTextForegroundThemeBrush" Color="#F0F2F6"/>
             <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F0F2F6"/>
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F2F6"/>
-            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9EA4B2"/>
-            <SolidColorBrush x:Key="TextTertiaryBrush" Color="#6B7180"/>
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#C7C7C7"/>
+            <SolidColorBrush x:Key="TextTertiaryBrush" Color="#A4A4A4"/>
 
             <!-- Window Caption Buttons -->
             <SolidColorBrush x:Key="TitleBarHoverBrush" Color="#14FFFFFF"/>
             <SolidColorBrush x:Key="TitleBarPressedBrush" Color="#0CFFFFFF"/>
-            <SolidColorBrush x:Key="CloseHoverBrush" Color="#3A3F4B"/>
-            <SolidColorBrush x:Key="ClosePressedBrush" Color="#2B2F39"/>
+            <SolidColorBrush x:Key="CloseHoverBrush" Color="#C42B1C"/>
+            <SolidColorBrush x:Key="ClosePressedBrush" Color="#9E2418"/>
 
             <SolidColorBrush x:Key="SmokeFillColorDefaultBrush" Color="#9608090C"/>
             <SolidColorBrush x:Key="ContentDialogSmokeLayerBackground" Color="#9608090C"/>
@@ -105,20 +93,20 @@
             <Color x:Key="ToggleSwitchStrokeOffPointerOver">#737C91</Color>
             <Color x:Key="ToggleSwitchStrokeOffPressed">#8A94A8</Color>
             <Color x:Key="ToggleSwitchStrokeOffDisabled">#323742</Color>
-            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#3A404E"/>
-            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#474E5F"/>
-            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#2E333F"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#60CDFF"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#80D8FF"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#4AB5E8"/>
             <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="#262A34"/>
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#656F85"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#60CDFF"/>
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#7D87A0"/>
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#565F73"/>
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="#3E4452"/>
             <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#9AA1B0"/>
             <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#D0D4DF"/>
             <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#E4E7EE"/>
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#F0F2F6"/>
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FFFFFF"/>
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#DDE1E8"/>
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#00263A"/>
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#00263A"/>
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#00263A"/>
 
             <!-- ComboBox & TextBox -->
             <SolidColorBrush x:Key="ComboBoxBackground" Color="#20242D"/>
@@ -169,34 +157,26 @@
         </ResourceDictionary>
 
         <!-- ================================================================ -->
-        <!-- LIGHT MODE (Pure Monochrome Light Slate — Zero Blur, Zero Color) -->
+        <!-- LIGHT THEME -->
         <!-- ================================================================ -->
         <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="BgBrush" Color="#F2F3F5"/>
-            <SolidColorBrush x:Key="HeaderBarBrush" Color="#F7F8FA"/>
-            <SolidColorBrush x:Key="FlyoutAcrylicBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="BgBrush" Color="#F3F3F3"/>
+            <SolidColorBrush x:Key="HeaderBarBrush" Color="#F3F3F3"/>
+            <SolidColorBrush x:Key="FloatingSurfaceBrush" Color="#FFFFFF"/>
 
-            <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#FCFCFC"/>
             <SolidColorBrush x:Key="HeroCardBrush" Color="#FFFFFF"/>
-            <SolidColorBrush x:Key="CardSecondaryBrush" Color="#EAECF0"/>
-            <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#E5E8EE"/>
+            <SolidColorBrush x:Key="CardSecondaryBrush" Color="#F5F5F5"/>
+            <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#EEEEEE"/>
             <SolidColorBrush x:Key="TrackBrush" Color="#16000000"/>
             <SolidColorBrush x:Key="HairlineBrush" Color="#12000000"/>
 
             <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#14000000"/>
             <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#1E000000"/>
 
-            <SolidColorBrush x:Key="NavSelectorTrayBrush" Color="#E8EAEE"/>
-            <SolidColorBrush x:Key="NavActivePillBrush" Color="#FFFFFF"/>
-            <SolidColorBrush x:Key="NavActivePillBorderBrush" Color="#18000000"/>
 
-            <RadialGradientBrush x:Key="HeroCoreGlowBrush" Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
-                <GradientStop Color="#20000000" Offset="0"/>
-                <GradientStop Color="#0B000000" Offset="0.55"/>
-                <GradientStop Color="#00000000" Offset="1"/>
-            </RadialGradientBrush>
 
-            <SolidColorBrush x:Key="ControlFillBrush" Color="#F5F6F8"/>
+            <SolidColorBrush x:Key="ControlFillBrush" Color="#FFFFFF"/>
             <SolidColorBrush x:Key="ControlHoverOverlayBrush" Color="#0A000000"/>
             <SolidColorBrush x:Key="ControlPressOverlayBrush" Color="#14000000"/>
             <SolidColorBrush x:Key="SubtleHoverOverlayBrush" Color="#08000000"/>
@@ -204,37 +184,34 @@
             <SolidColorBrush x:Key="AccentHoverOverlayBrush" Color="#0C000000"/>
             <SolidColorBrush x:Key="AccentPressOverlayBrush" Color="#16000000"/>
 
-            <!-- Monochrome Light Tonal Actions -->
-            <SolidColorBrush x:Key="AccentBrush" Color="#E3E6EC"/>
-            <SolidColorBrush x:Key="AccentHoverBrush" Color="#D7DBE3"/>
-            <SolidColorBrush x:Key="AccentPressedBrush" Color="#CACFD9"/>
-            <SolidColorBrush x:Key="AccentTextBrush" Color="#16181D"/>
-            <SolidColorBrush x:Key="AccentIndicatorBrush" Color="#3E4350"/>
-            <SolidColorBrush x:Key="AccentDimBrush" Color="#12000000"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#0067C0"/>
+            <SolidColorBrush x:Key="AccentTextBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="AccentIndicatorBrush" Color="#005FB8"/>
+            <SolidColorBrush x:Key="AccentDimBrush" Color="#1A0067C0"/>
             <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#24000000"/>
 
-            <SolidColorBrush x:Key="RecBrush" Color="#2E323D"/>
+            <SolidColorBrush x:Key="RecBrush" Color="#C42B1C"/>
             <SolidColorBrush x:Key="DangerFillBrush" Color="#F1F2F5"/>
             <SolidColorBrush x:Key="DangerBorderBrush" Color="#1E000000"/>
-            <SolidColorBrush x:Key="DangerTextBrush" Color="#2C303A"/>
+            <SolidColorBrush x:Key="DangerTextBrush" Color="#A4262C"/>
             <SolidColorBrush x:Key="DangerHoverOverlayBrush" Color="#0E000000"/>
             <SolidColorBrush x:Key="DangerPressOverlayBrush" Color="#16000000"/>
 
-            <SolidColorBrush x:Key="ErrorBrush" Color="#4A4F5C"/>
+            <SolidColorBrush x:Key="ErrorBrush" Color="#C42B1C"/>
             <SolidColorBrush x:Key="WarningBgBrush" Color="#0B000000"/>
             <SolidColorBrush x:Key="WarningBorderBrush" Color="#18000000"/>
-            <SolidColorBrush x:Key="SuccessBrush" Color="#2E323D"/>
+            <SolidColorBrush x:Key="SuccessBrush" Color="#107C10"/>
 
             <SolidColorBrush x:Key="DefaultTextForegroundThemeBrush" Color="#16181D"/>
             <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#16181D"/>
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="#16181D"/>
-            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#505562"/>
-            <SolidColorBrush x:Key="TextTertiaryBrush" Color="#727785"/>
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#454545"/>
+            <SolidColorBrush x:Key="TextTertiaryBrush" Color="#5F5F5F"/>
 
             <SolidColorBrush x:Key="TitleBarHoverBrush" Color="#0E000000"/>
             <SolidColorBrush x:Key="TitleBarPressedBrush" Color="#18000000"/>
-            <SolidColorBrush x:Key="CloseHoverBrush" Color="#D5D8E0"/>
-            <SolidColorBrush x:Key="ClosePressedBrush" Color="#C2C6D0"/>
+            <SolidColorBrush x:Key="CloseHoverBrush" Color="#C42B1C"/>
+            <SolidColorBrush x:Key="ClosePressedBrush" Color="#9E2418"/>
 
             <SolidColorBrush x:Key="SmokeFillColorDefaultBrush" Color="#540E1118"/>
             <SolidColorBrush x:Key="ContentDialogSmokeLayerBackground" Color="#540E1118"/>
@@ -261,11 +238,11 @@
             <Color x:Key="ToggleSwitchStrokeOffPointerOver">#7A8294</Color>
             <Color x:Key="ToggleSwitchStrokeOffPressed">#626A7B</Color>
             <Color x:Key="ToggleSwitchStrokeOffDisabled">#C4C9D4</Color>
-            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#3B404C"/>
-            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#2E323D"/>
-            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#222630"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#0067C0"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#005FAF"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#00539C"/>
             <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="#B6BCC8"/>
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#3B404C"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#0067C0"/>
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#2E323D"/>
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#222630"/>
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="#B6BCC8"/>
@@ -274,7 +251,7 @@
             <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#222630"/>
             <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FFFFFF"/>
             <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FFFFFF"/>
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#F0F2F6"/>
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FFFFFF"/>
 
             <SolidColorBrush x:Key="ComboBoxBackground" Color="#FFFFFF"/>
             <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#F2F4F7"/>

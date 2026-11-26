@@ -14,7 +14,7 @@ body {
   height: 100%;
   background: transparent;
   overflow: hidden;
-  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
   text-transform: lowercase;
   user-select: none;
   -webkit-user-select: none;
@@ -577,4 +577,8 @@ body.editing .close-btn {
     animation: none;
     transition: none;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

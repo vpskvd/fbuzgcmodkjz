@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace InstantReplay;
@@ -15,12 +16,14 @@ public sealed record UpdateCheckResult(
     string? AssetName,
     string? DownloadUrl,
     long AssetSizeBytes,
+    string? AssetDigest,
     string? ReleaseUrl);
 
 public static class AppUpdater
 {
     public const string GitHubOwner = "vpskvd";
     public const string GitHubRepo = "fbuzgcmodkjz";
+    private const string InstallerName = "InstantReplaySetup.exe";
     private static readonly string LatestReleaseApiUrl =
         $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
 
@@ -51,7 +54,7 @@ public static class AppUpdater
         using var resp = await Http.GetAsync(LatestReleaseApiUrl, ct);
         if (resp.StatusCode == HttpStatusCode.NotFound)
         {
-            return new UpdateCheckResult(false, true, CurrentVersion, null, "", null, null, 0, null);
+            return new UpdateCheckResult(false, true, CurrentVersion, null, "", null, null, 0, null, null);
         }
 
         resp.EnsureSuccessStatusCode();
@@ -66,6 +69,7 @@ public static class AppUpdater
         string? assetName = null;
         string? downloadUrl = null;
         long assetSize = 0;
+        string? assetDigest = null;
 
         if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
         {
@@ -74,65 +78,72 @@ public static class AppUpdater
                 string? name = asset.TryGetProperty("name", out var nEl) ? nEl.GetString() : null;
                 string? url = asset.TryGetProperty("browser_download_url", out var dEl) ? dEl.GetString() : null;
                 long sz = asset.TryGetProperty("size", out var sEl) && sEl.TryGetInt64(out long sVal) ? sVal : 0;
-                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(url)) continue;
-                if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
+                string? digest = asset.TryGetProperty("digest", out var digestEl) ? digestEl.GetString() : null;
+                if (!string.Equals(name, InstallerName, StringComparison.OrdinalIgnoreCase) ||
+                    !IsInstallerUrl(url) || !IsSha256(digest) || sz < 65536) continue;
 
-                bool isSetup = name.Contains("setup", StringComparison.OrdinalIgnoreCase);
-                if (downloadUrl == null || isSetup)
-                {
-                    assetName = name;
-                    downloadUrl = url;
-                    assetSize = sz;
-                    if (isSetup) break;
-                }
+                assetName = name;
+                downloadUrl = url;
+                assetSize = sz;
+                assetDigest = digest;
+                break;
             }
         }
 
         bool newer = latest != null && latest > CurrentVersion && !string.IsNullOrWhiteSpace(downloadUrl);
-        return new UpdateCheckResult(newer, false, CurrentVersion, latest, tag, assetName, downloadUrl, assetSize, releaseUrl);
+        return new UpdateCheckResult(newer, false, CurrentVersion, latest, tag, assetName, downloadUrl, assetSize, assetDigest, releaseUrl);
     }
 
+    private static bool IsInstallerUrl(string? value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps &&
+        url.IsDefaultPort && url.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) &&
+        url.AbsolutePath.StartsWith($"/{GitHubOwner}/{GitHubRepo}/releases/download/", StringComparison.OrdinalIgnoreCase) &&
+        url.AbsolutePath.EndsWith($"/{InstallerName}", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsSha256(string? digest) => digest is { Length: 71 } &&
+        digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) && digest[7..].All(Uri.IsHexDigit);
+
     public static async Task<string> DownloadInstallerAsync(
-        string downloadUrl,
-        string? preferredFileName,
+        UpdateCheckResult update,
         IProgress<double>? progress,
         CancellationToken ct = default)
     {
-        string safeName = string.IsNullOrWhiteSpace(preferredFileName)
-            ? "InstantReplaySetup.exe"
-            : Path.GetFileName(preferredFileName);
-        if (!safeName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            safeName += ".exe";
+        if (!IsInstallerUrl(update.DownloadUrl) || !IsSha256(update.AssetDigest) || update.AssetSizeBytes < 65536)
+            throw new InvalidOperationException("Release installer metadata is missing or invalid.");
 
-        string destPath = Path.Combine(Path.GetTempPath(), $"ir_update_{Guid.NewGuid():N}_{safeName}");
+        string destPath = Path.Combine(Path.GetTempPath(), $"ir_update_{Guid.NewGuid():N}_{InstallerName}");
+        bool created = false;
         try
         {
             using var dlClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
             dlClient.DefaultRequestHeaders.UserAgent.ParseAdd($"InstantReplay/{CurrentVersionText}");
 
-            using HttpResponseMessage resp = await dlClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+            using HttpResponseMessage resp = await dlClient.GetAsync(update.DownloadUrl!, HttpCompletionOption.ResponseHeadersRead, ct);
             resp.EnsureSuccessStatusCode();
 
-            long totalBytes = resp.Content.Headers.ContentLength ?? -1;
+            long totalBytes = update.AssetSizeBytes;
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             await using Stream src = await resp.Content.ReadAsStreamAsync(ct);
-            await using (var dst = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true))
+            await using (var dst = new FileStream(destPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, useAsync: true))
             {
+                created = true;
                 byte[] buf = new byte[65536];
                 long readTotal = 0;
                 int n;
                 while ((n = await src.ReadAsync(buf, ct)) > 0)
                 {
-                    await dst.WriteAsync(buf.AsMemory(0, n), ct);
                     readTotal += n;
-                    if (totalBytes > 0)
-                        progress?.Report(Math.Clamp(readTotal * 100.0 / totalBytes, 0, 100));
+                    if (readTotal > totalBytes) throw new InvalidDataException("Installer exceeds the release asset size.");
+                    hash.AppendData(buf, 0, n);
+                    await dst.WriteAsync(buf.AsMemory(0, n), ct);
+                    progress?.Report(Math.Min(99, readTotal * 100.0 / totalBytes));
                 }
+                if (readTotal != totalBytes) throw new InvalidDataException("Installer size differs from the release asset.");
                 await dst.FlushAsync(ct);
             }
 
-            var info = new FileInfo(destPath);
-            if (!info.Exists || info.Length < 65536)
-                throw new InvalidOperationException("downloaded installer file is incomplete.");
+            if (!CryptographicOperations.FixedTimeEquals(hash.GetHashAndReset(), Convert.FromHexString(update.AssetDigest![7..])))
+                throw new InvalidDataException("Installer SHA-256 differs from the GitHub release asset.");
 
             using (var check = File.OpenRead(destPath))
             {
@@ -145,7 +156,7 @@ public static class AppUpdater
         }
         catch
         {
-            try { if (File.Exists(destPath)) File.Delete(destPath); } catch { }
+            try { if (created) File.Delete(destPath); } catch { }
             throw;
         }
     }
@@ -155,7 +166,7 @@ public static class AppUpdater
         Process.Start(new ProcessStartInfo
         {
             FileName = installerPath,
-            Arguments = "/SP- /SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS --update",
+            Arguments = "/SP- /SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS --update",
             UseShellExecute = true,
         });
     }

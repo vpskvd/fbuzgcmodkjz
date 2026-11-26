@@ -190,17 +190,27 @@ public sealed class Settings
         return new Settings { DarkMode = WindowsTheme.IsSystemDarkMode() };
     }
 
-    public void Save()
+    public void Save() => WriteSettings(JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
+
+    private static void WriteSettings(string json)
     {
+        string path = PathOnDisk;
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None);
         try
         {
-            string path = PathOnDisk;
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
+            using (stream)
+            {
+                using (var writer = new StreamWriter(stream, leaveOpen: true)) writer.Write(json);
+                stream.Flush(flushToDisk: true);
+            }
+            File.Move(temporary, path, overwrite: true);
         }
-        catch (Exception ex)
+        catch
         {
-            Logger.Error("settings.save failed", ex);
+            try { File.Delete(temporary); } catch { }
+            throw;
         }
     }
 
@@ -234,7 +244,7 @@ public sealed class Settings
                 doc[name] = JsonSerializer.SerializeToElement(property.GetValue(this), options);
             }
 
-            File.WriteAllText(path, JsonSerializer.Serialize(doc, options));
+            WriteSettings(JsonSerializer.Serialize(doc, options));
         }
         catch (Exception ex)
         {
@@ -319,7 +329,7 @@ public readonly struct SaveReplayResult
         SaveReplayOutcome.Success => $"replay saved to {Category}",
         SaveReplayOutcome.NotRecording => "recorder isn't running — start replay first.",
         SaveReplayOutcome.NoSegments => "still buffering — try again in a few seconds.",
-        SaveReplayOutcome.WriteBlocked => "save blocked by windows controlled folder access.",
+        SaveReplayOutcome.WriteBlocked => "Windows denied access to the replay folder.",
         SaveReplayOutcome.MergeFailed => "failed to save replay (see debug log for details).",
         SaveReplayOutcome.LowMemory => "replay save skipped: windows is low on committed memory.",
         _ => "failed to save replay (see debug log for details).",
@@ -515,24 +525,24 @@ public sealed class RecorderEngine : IDisposable
 
     private bool StartNative(IntPtr window)
     {
-        bool customAudioApps = _captureSettings.RecordSystemAudio
-            && string.Equals(_captureSettings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase)
-            && _captureSettings.SystemAudioApps.Count > 0;
+        bool selectedAudio = string.Equals(_captureSettings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase);
+        bool captureAudio = _captureSettings.RecordSystemAudio
+            && (!selectedAudio || _captureSettings.SystemAudioApps.Count > 0);
         var quality = VideoQualityProfile.FromPreset(_captureSettings.QualityPreset, _captureSettings.FrameRate);
         bool ok = _engine.StartBuffering(
             monitorIndex: _captureSettings.CaptureMonitorIndex,
             ringSeconds: Math.Max(_captureSettings.ReplayDurationSeconds, 1),
             fps: _captureSettings.FrameRate,
             bitrateKbps: quality.BitrateKbps,
-            captureAudio: _captureSettings.RecordSystemAudio,
+            captureAudio: captureAudio,
             preference: ResolveEncoder(_captureSettings.EncoderChoice),
             method: _specific ? CaptureMethod.Wgc : ResolveCaptureMethod(_captureSettings.CaptureMethod),
             captureMic: _captureSettings.RecordMicrophone,
             micDevice: _captureSettings.Microphone,
             targetWindow: window,
-            captureOptions: (uint)((_captureSettings.CaptureClientArea ? 1 : 0) | (_captureSettings.CaptureCursor ? 2 : 0) | (!_specific && _captureSettings.CaptureRoundedCorners ? 8 : 0) | (_captureSettings.CaptureSecondaryWindows ? 16 : 0) | (_specific && !customAudioApps ? 64 : 0)),
+            captureOptions: (uint)((_captureSettings.CaptureClientArea ? 1 : 0) | (_captureSettings.CaptureCursor ? 2 : 0) | (!_specific && _captureSettings.CaptureRoundedCorners ? 8 : 0) | (_captureSettings.CaptureSecondaryWindows ? 16 : 0) | (_specific && !selectedAudio ? 64 : 0)),
             outputWidthCap: quality.MaxWidth, outputHeightCap: quality.MaxHeight,
-            systemAudioApps: customAudioApps ? _captureSettings.SystemAudioApps.ToArray() : null);
+            systemAudioApps: captureAudio && selectedAudio ? _captureSettings.SystemAudioApps.ToArray() : null);
 
         if (!ok)
         {
@@ -776,7 +786,7 @@ public sealed class RecorderEngine : IDisposable
         catch (Exception ex)
         {
             Logger.Error("savereplay: failed creating category folder", ex);
-            return ProbeWriteBlocked(destDir, ex, category);
+            return WriteFailure(ex, category);
         }
 
         string baseName = $"replay_{DateTime.Now:yyyyMMdd_HHmmss}";
@@ -785,34 +795,56 @@ public sealed class RecorderEngine : IDisposable
         while (File.Exists(destMp4))
             destMp4 = Path.Combine(categoryFolder, $"{baseName}_{suffix++}.mp4");
 
+        string stagingPath = Path.Combine(categoryFolder, $".replay_{Guid.NewGuid():N}.part");
         int rc;
+        bool stagingOwned = false;
         try
         {
-            rc = _engine.SaveReplay(destMp4, Math.Max(_settings.ReplayDurationSeconds, 1));
+            rc = _engine.SaveReplay(stagingPath, Math.Max(_settings.ReplayDurationSeconds, 1));
+            if (rc == 0)
+            {
+                stagingOwned = true;
+                while (true)
+                {
+                    try
+                    {
+                        File.Move(stagingPath, destMp4);
+                        stagingOwned = false;
+                        break;
+                    }
+                    catch (IOException) when (File.Exists(destMp4))
+                    {
+                        destMp4 = Path.Combine(categoryFolder, $"{baseName}_{suffix++}.mp4");
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
             Logger.Error("savereplay: exception in native engine", ex);
-            CleanupPartialFile(destMp4);
-            return ProbeWriteBlocked(destDir, ex, category);
+            return WriteFailure(ex, category);
+        }
+        finally
+        {
+            // The native muxer owns partial output until it reports success.
+            if (stagingOwned) CleanupPartialFile(stagingPath);
         }
 
-        if (rc == 0 && File.Exists(destMp4))
+        if (rc == 0)
         {
             Logger.Info($"replay saved [{category}] - path: {destMp4}");
             return new SaveReplayResult(SaveReplayOutcome.Success, destMp4, category);
         }
 
         Logger.Info($"savereplay: native engine returned {rc}.");
-        CleanupPartialFile(destMp4);
 
         if (rc == -31)
             return new SaveReplayResult(SaveReplayOutcome.LowMemory, category: category);
 
-        if (rc == -1 || rc == -30)
+        if (rc == IrNative.NotEnoughData)
             return new SaveReplayResult(SaveReplayOutcome.NoSegments, category: category);
 
-        return ProbeWriteBlocked(destDir, null, category);
+        return ProbeWriteBlocked(categoryFolder, category);
     }
 
     private static void CleanupPartialFile(string path)
@@ -824,23 +856,22 @@ public sealed class RecorderEngine : IDisposable
         catch { }
     }
 
-    private static SaveReplayResult ProbeWriteBlocked(string dir, Exception? originalError, string category)
+    private static SaveReplayResult WriteFailure(Exception error, string category) =>
+        new(error is UnauthorizedAccessException ? SaveReplayOutcome.WriteBlocked : SaveReplayOutcome.MergeFailed, category: category);
+
+    private static SaveReplayResult ProbeWriteBlocked(string dir, string category)
     {
         try
         {
-            string probePath = Path.Combine(dir, ".ir_write_test");
-            File.WriteAllText(probePath, "replay write test");
-            File.Delete(probePath);
+            string probePath = Path.Combine(dir, $".replay_probe_{Guid.NewGuid():N}.tmp");
+            using var probe = new FileStream(probePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.DeleteOnClose);
         }
         catch (UnauthorizedAccessException)
         {
-            Logger.Warn($"savereplay: write to '{dir}' blocked by controlled folder access.");
+            Logger.Warn($"savereplay: write to '{dir}' denied by Windows.");
             return new SaveReplayResult(SaveReplayOutcome.WriteBlocked, category: category);
         }
         catch { }
-
-        if (originalError != null)
-            Logger.Error("savereplay failed", originalError);
 
         return new SaveReplayResult(SaveReplayOutcome.MergeFailed, category: category);
     }
@@ -1034,6 +1065,7 @@ public sealed class ReplayEngine : IDisposable
     public const int SaveNotEnoughData = IrNative.NotEnoughData;
 
     private readonly object _opLock = new();
+    private readonly object _handleLock = new();
     private IntPtr _engine;
     private volatile bool _hasError;
     private string _lastVersion = "";
@@ -1060,7 +1092,7 @@ public sealed class ReplayEngine : IDisposable
                 Logger.Error("ir_create failed; native engine unavailable.");
                 return false;
             }
-            _engine = handle;
+            lock (_handleLock) _engine = handle;
             Logger.Info($"native engine created ({_lastVersion}).");
             return true;
         }
@@ -1149,48 +1181,54 @@ public sealed class ReplayEngine : IDisposable
 
     public bool TryGetBufferStats(out long bufferBytes, out long bufferedMs)
     {
-        bufferBytes = 0;
-        bufferedMs = 0;
-        if (_engine == IntPtr.Zero) return false;
-        try
+        lock (_handleLock)
         {
-            IrNative.IR_GetBufferStats(_engine, out bufferBytes, out bufferedMs);
-            return true;
+            bufferBytes = 0;
+            bufferedMs = 0;
+            if (_engine == IntPtr.Zero) return false;
+            try
+            {
+                IrNative.IR_GetBufferStats(_engine, out bufferBytes, out bufferedMs);
+                return true;
+            }
+            catch { return false; }
         }
-        catch { return false; }
     }
 
     public void GetStatus(out bool isBuffering, out int segmentCount, out int ringSeconds,
         out long framesEncoded, out long framesDropped, out bool hasError,
         out long audioFrames, out long audioEvents, out long audioGotFrames, out long healthHeartbeat)
     {
-        if (_engine == IntPtr.Zero)
+        lock (_handleLock)
         {
-            isBuffering = false;
-            segmentCount = 0;
-            ringSeconds = 0;
-            framesEncoded = 0;
-            framesDropped = 0;
-            hasError = _hasError;
-            audioFrames = 0;
-            audioEvents = 0;
-            audioGotFrames = 0;
-            healthHeartbeat = 0;
-            return;
-        }
+            if (_engine == IntPtr.Zero)
+            {
+                isBuffering = false;
+                segmentCount = 0;
+                ringSeconds = 0;
+                framesEncoded = 0;
+                framesDropped = 0;
+                hasError = _hasError;
+                audioFrames = 0;
+                audioEvents = 0;
+                audioGotFrames = 0;
+                healthHeartbeat = 0;
+                return;
+            }
 
-        IrNative.IR_GetStatus(_engine, out int ib, out int rs, out long fe, out long fd, out int he,
-            out long af, out long ae, out long agf, out long hb);
-        isBuffering = ib != 0;
-        segmentCount = 0;
-        ringSeconds = rs;
-        framesEncoded = fe;
-        framesDropped = fd;
-        hasError = he != 0 || _hasError;
-        audioFrames = af;
-        audioEvents = ae;
-        audioGotFrames = agf;
-        healthHeartbeat = hb;
+            IrNative.IR_GetStatus(_engine, out int ib, out int rs, out long fe, out long fd, out int he,
+                out long af, out long ae, out long agf, out long hb);
+            isBuffering = ib != 0;
+            segmentCount = 0;
+            ringSeconds = rs;
+            framesEncoded = fe;
+            framesDropped = fd;
+            hasError = he != 0 || _hasError;
+            audioFrames = af;
+            audioEvents = ae;
+            audioGotFrames = agf;
+            healthHeartbeat = hb;
+        }
     }
 
     public static List<(int Index, string Name)> EnumerateMonitors()
@@ -1255,30 +1293,34 @@ public sealed class ReplayEngine : IDisposable
     public bool TryGetMicStatus(out long micFrames, out long micEvents, out long micGotFrames,
         out long micFailHr, out int sysPeak, out int micPeak, out string activeName)
     {
-        micFrames = 0; micEvents = 0; micGotFrames = 0; micFailHr = 0;
-        sysPeak = 0; micPeak = 0; activeName = "";
-        if (_engine == IntPtr.Zero) return false;
-        try
+        lock (_handleLock)
         {
-            var sb = new StringBuilder(512);
-            IrNative.IR_MicStatus(_engine, out micFrames, out micEvents, out micGotFrames,
-                out micFailHr, out sysPeak, out micPeak, sb, sb.Capacity);
-            activeName = sb.ToString().Trim();
-            return true;
+            micFrames = 0; micEvents = 0; micGotFrames = 0; micFailHr = 0;
+            sysPeak = 0; micPeak = 0; activeName = "";
+            if (_engine == IntPtr.Zero) return false;
+            try
+            {
+                var sb = new StringBuilder(512);
+                IrNative.IR_MicStatus(_engine, out micFrames, out micEvents, out micGotFrames,
+                    out micFailHr, out sysPeak, out micPeak, sb, sb.Capacity);
+                activeName = sb.ToString().Trim();
+                return true;
+            }
+            catch { return false; }
         }
-        catch { return false; }
     }
 
     public void Shutdown()
     {
         lock (_opLock)
         {
-            StopBuffering();
-            if (_engine != IntPtr.Zero)
+            IntPtr handle;
+            lock (_handleLock)
             {
-                try { IrNative.IR_Destroy(_engine); } catch { }
+                handle = _engine;
                 _engine = IntPtr.Zero;
             }
+            if (handle != IntPtr.Zero) IrNative.IR_Destroy(handle);
         }
     }
 

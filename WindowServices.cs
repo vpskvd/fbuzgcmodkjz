@@ -31,7 +31,6 @@ internal static class Chrome
     {
         try
         {
-            window.SystemBackdrop = null;
             TitleBarButtons.SetCornerPreference(WindowNative.GetWindowHandle(window), round: true);
         }
         catch (Exception ex)
