@@ -7,7 +7,6 @@ namespace InstantReplay;
 
 public sealed record GameRule(string Name, string Executable, string Keyword = "")
 {
-    public string LowerName => Name.ToLowerInvariant();
     public string Description => string.IsNullOrWhiteSpace(Keyword)
         ? Executable.ToLowerInvariant()
         : $"{Executable.ToLowerInvariant()} · title contains {Keyword.ToLowerInvariant()}";

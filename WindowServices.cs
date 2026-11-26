@@ -264,7 +264,7 @@ public static class ToastCenter
     private static void EnsureRegistryEntry()
     {
         using var key = Registry.CurrentUser.CreateSubKey($@"Software\Classes\AppUserModelId\{AumId}");
-        key.SetValue("DisplayName", "instant replay");
+        key.SetValue("DisplayName", "Instant Replay");
         key.SetValue("IconUri", Environment.ProcessPath!, RegistryValueKind.String);
     }
 
@@ -790,10 +790,8 @@ public sealed class TrayMenuItem
 
 public static class UiHover
 {
-    private static readonly HashSet<FrameworkElement> Wired = new();
-    private static Microsoft.UI.Composition.Compositor? _compositor;
-    private static Microsoft.UI.Composition.SpringVector3NaturalMotionAnimation? _press;
-    private static Microsoft.UI.Composition.SpringVector3NaturalMotionAnimation? _release;
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Button, object> Wired = new();
+    private static readonly Windows.UI.ViewManagement.UISettings SystemMotion = new();
 
     public static readonly DependencyProperty IsEnabledProperty =
         DependencyProperty.RegisterAttached("IsEnabled", typeof(bool), typeof(UiHover),
@@ -816,7 +814,7 @@ public static class UiHover
         if (button.IsLoaded) Wire(button);
     }
 
-    private static readonly HashSet<Button> IconWired = new();
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Button, object> IconWired = new();
     private static readonly SolidColorBrush WhiteBrush = new(Color.FromArgb(255, 255, 255, 255));
 
     private static void OnHoverIconToneChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -828,7 +826,7 @@ public static class UiHover
 
     private static void WireIconTone(Button button)
     {
-        if (!IconWired.Add(button)) return;
+        if (!IconWired.TryAdd(button, new object())) return;
         void Apply(bool hover)
         {
             string tone = GetHoverIconTone(button);
@@ -870,41 +868,36 @@ public static class UiHover
 
     private static void Wire(Button button)
     {
-        if (!GetIsEnabled(button) || !Wired.Add(button)) return;
+        if (!GetIsEnabled(button) || !Wired.TryAdd(button, new object())) return;
         button.AddHandler(UIElement.PointerPressedEvent,
             new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) => AnimateScale(button, 0.98f)), true);
         button.AddHandler(UIElement.PointerReleasedEvent,
             new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) => AnimateScale(button, 1.0f)), true);
         button.AddHandler(UIElement.PointerCaptureLostEvent,
             new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) => AnimateScale(button, 1.0f)), true);
+        button.AddHandler(UIElement.PointerCanceledEvent,
+            new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) => AnimateScale(button, 1.0f)), true);
+        button.IsEnabledChanged += (_, _) => { if (!button.IsEnabled) AnimateScale(button, 1.0f); };
     }
 
     private static void AnimateScale(FrameworkElement element, float target)
     {
-        try
+        var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(element);
+        if (!SystemMotion.AnimationsEnabled || !GetIsEnabled(element) || element is Button { IsEnabled: false })
         {
-            if (element is Button { IsEnabled: false } || !GetIsEnabled(element)) return;
-            _compositor ??= CompositionTarget.GetCompositorForCurrentThread();
-            var anim = target < 0.995f
-                ? (_press ??= CreateSpring(new System.Numerics.Vector3(0.98f, 0.98f, 1f)))
-                : (_release ??= CreateSpring(System.Numerics.Vector3.One));
-
-            var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(element);
-            if (element.ActualWidth > 0 && element.ActualHeight > 0)
-                visual.CenterPoint = new System.Numerics.Vector3((float)element.ActualWidth / 2f, (float)element.ActualHeight / 2f, 0f);
-            visual.StartAnimation("Scale", anim);
+            visual.StopAnimation("Scale");
+            visual.Scale = System.Numerics.Vector3.One;
+            return;
         }
-        catch { }
-    }
 
-    private static Microsoft.UI.Composition.SpringVector3NaturalMotionAnimation CreateSpring(System.Numerics.Vector3 final)
-    {
-        var anim = _compositor!.CreateSpringVector3Animation();
-        anim.Target = "Scale";
-        anim.FinalValue = final;
-        anim.DampingRatio = 1.0f;
-        anim.Period = TimeSpan.FromMilliseconds(45);
-        return anim;
+        var compositor = visual.Compositor;
+        var easing = compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0.22f, 1), new System.Numerics.Vector2(0.36f, 1));
+        var animation = compositor.CreateVector3KeyFrameAnimation();
+        animation.InsertExpressionKeyFrame(0, "this.StartingValue");
+        animation.InsertKeyFrame(1, new System.Numerics.Vector3(target, target, 1), easing);
+        animation.Duration = TimeSpan.FromMilliseconds(target < 1 ? 100 : 150);
+        visual.CenterPoint = new System.Numerics.Vector3((float)element.ActualWidth / 2, (float)element.ActualHeight / 2, 0);
+        visual.StartAnimation("Scale", animation);
     }
 }
 
@@ -939,12 +932,14 @@ public sealed class ClipNotificationWindow : Window
     private readonly Border _card;
     private readonly TextBlock _message;
     private readonly TextBlock _detail;
-    private readonly Microsoft.UI.Xaml.Shapes.Ellipse _dot;
+    private readonly FontIcon _statusIcon;
     private readonly DispatcherTimer _lifetime = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly DispatcherTimer _motion = new() { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly Windows.UI.ViewManagement.UISettings _uiSettings = new();
     private long _motionStart;
     private int _motionFrom, _motionTo, _motionDuration, _currentX, _shownX, _hiddenX, _y;
     private bool _leaving;
+    private double _motionOpacity;
 
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr hwnd);
@@ -980,24 +975,26 @@ public sealed class ClipNotificationWindow : Window
         text.Children.Add(_message);
         text.Children.Add(_detail);
 
-        _dot = new Microsoft.UI.Xaml.Shapes.Ellipse
+        _statusIcon = new FontIcon
         {
-            Width = 10,
-            Height = 10,
-            Fill = new SolidColorBrush(Color.FromArgb(255, 212, 216, 224)),
-            VerticalAlignment = VerticalAlignment.Center
+            Glyph = "\uE73E", FontSize = 17,
+            Foreground = new SolidColorBrush(Color.FromArgb(255, 184, 190, 203)),
         };
 
         var content = new Grid { ColumnSpacing = 14, Margin = new Thickness(18, 12, 18, 12) };
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        content.Children.Add(_dot);
+        content.Children.Add(new Border
+        {
+            Width = 38, Height = 38, CornerRadius = new CornerRadius(10), VerticalAlignment = VerticalAlignment.Center,
+            Background = new SolidColorBrush(Color.FromArgb(255, 43, 48, 59)), Child = _statusIcon,
+        });
         Grid.SetColumn(text, 1);
         content.Children.Add(text);
 
         _card = new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(255, 24, 27, 33)),
+            Background = new SolidColorBrush(Color.FromArgb(255, 27, 30, 37)),
             BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255)),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),
@@ -1019,13 +1016,13 @@ public sealed class ClipNotificationWindow : Window
         TitleBarButtons.StripWindowFrame(_hwnd);
         if (!SetWindowDisplayAffinity(_hwnd, 0x11)) Logger.Debug("notification capture exclusion unavailable.");
 
-        _lifetime.Tick += (_, _) => { _lifetime.Stop(); BeginSlide(_hiddenX, 260, leaving: true); };
+        _lifetime.Tick += (_, _) => { _lifetime.Stop(); BeginSlide(_hiddenX, 160, leaving: true); };
         _motion.Tick += (_, _) => AdvanceSlide();
         Closed += (_, _) => { _lifetime.Stop(); _motion.Stop(); _instance = null; };
     }
 
     public static void Show(int seconds, string category) => ShowResult(Math.Max(1, seconds), category, false);
-    public static void ShowError(string? detail = null) => ShowResult(0, detail ?? "see debug log for details", true);
+    public static void ShowError(string? detail = null) => ShowResult(0, detail ?? "see the debug log for details", true);
 
     private static void ShowResult(int seconds, string category, bool failed)
     {
@@ -1039,12 +1036,14 @@ public sealed class ClipNotificationWindow : Window
 
     private void Present(int seconds, string category, bool failed)
     {
+        bool visible = _lifetime.IsEnabled || _motion.IsEnabled;
         _lifetime.Stop(); _motion.Stop();
-        _message.Text = failed ? "failed to clip" : $"clipped last {seconds} {(seconds == 1 ? "second" : "seconds")}";
-        _detail.Text = failed ? category.ToLowerInvariant() : $"saved to {category.ToLowerInvariant()}";
-        _dot.Fill = new SolidColorBrush(failed
-            ? Color.FromArgb(255, 168, 174, 186)
-            : Color.FromArgb(255, 226, 230, 238));
+        _message.Text = failed ? "could not save replay" : $"saved the last {seconds} {(seconds == 1 ? "second" : "seconds")}";
+        _detail.Text = failed ? category.ToLowerInvariant() : $"saved to {ReplayItem.FormatCategory(category)}";
+        _statusIcon.Glyph = failed ? "\uE783" : "\uE73E";
+        _statusIcon.Foreground = new SolidColorBrush(failed
+            ? Color.FromArgb(255, 255, 153, 164)
+            : Color.FromArgb(255, 184, 190, 203));
 
         var foreground = GetForegroundWindow();
         var display = DisplayArea.GetFromWindowId(
@@ -1055,20 +1054,33 @@ public sealed class ClipNotificationWindow : Window
         int width = Math.Min((int)Math.Round(340 * scale), area.Width - 24);
         int height = (int)Math.Round(84 * scale);
         int margin = (int)Math.Round(20 * scale);
-        _shownX = area.X + margin;
-        _hiddenX = display.OuterBounds.X - width - 16;
-        _currentX = _hiddenX;
-        _y = area.Y + margin;
-        _appWindow.MoveAndResize(new RectInt32(_hiddenX, _y, width, height));
+        int shownX = area.X + margin;
+        int y = area.Y + margin;
+        bool sameAnchor = visible && _shownX == shownX && _y == y;
+        _shownX = shownX;
+        _hiddenX = _shownX - (int)Math.Round(12 * scale);
+        _y = y;
+        if (!sameAnchor)
+        {
+            _currentX = _uiSettings.AnimationsEnabled ? _hiddenX : _shownX;
+            _card.Opacity = _uiSettings.AnimationsEnabled ? 0 : 1;
+        }
+        _appWindow.MoveAndResize(new RectInt32(_currentX, _y, width, height));
         _appWindow.Show(false);
-        SetWindowPos(_hwnd, new IntPtr(-1), _hiddenX, _y, 0, 0, 0x0011);
-        BeginSlide(_shownX, 320, leaving: false);
+        SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011);
+        BeginSlide(_shownX, 190, leaving: false);
     }
 
     private void BeginSlide(int destination, int milliseconds, bool leaving)
     {
         _motion.Stop();
+        if (!_uiSettings.AnimationsEnabled)
+        {
+            if (leaving) HideSafely(); else _lifetime.Start();
+            return;
+        }
         _motionFrom = _currentX; _motionTo = destination;
+        _motionOpacity = _card.Opacity;
         _motionDuration = milliseconds; _leaving = leaving;
         _motionStart = System.Diagnostics.Stopwatch.GetTimestamp();
         _motion.Start();
@@ -1084,6 +1096,7 @@ public sealed class ClipNotificationWindow : Window
                 ? (progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.Pow(-2 * progress + 2, 3) / 2)
                 : 1 - Math.Pow(1 - progress, 3);
             _currentX = (int)Math.Round(_motionFrom + (_motionTo - _motionFrom) * eased);
+            _card.Opacity = _motionOpacity + ((_leaving ? 0 : 1) - _motionOpacity) * eased;
             if (!SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011))
             {
                 HideSafely();

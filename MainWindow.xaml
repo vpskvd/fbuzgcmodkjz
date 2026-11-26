@@ -4,18 +4,15 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:InstantReplay">
 
-    <Window.SystemBackdrop>
-        <MicaBackdrop/>
-    </Window.SystemBackdrop>
+    <Grid x:Name="RootGrid" Background="{ThemeResource BgBrush}"
+          SizeChanged="RootGrid_SizeChanged" KeyDown="RootGrid_KeyDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-    <Grid x:Name="RootGrid"
-          SizeChanged="RootGrid_SizeChanged"
-          KeyDown="RootGrid_KeyDown">
-
-        <!-- ================================================================ -->
-        <!-- CONTENT LAYER                                                    -->
-        <!-- ================================================================ -->
-        <Grid x:Name="PagesHost">
+        <Grid x:Name="PagesHost" Grid.Row="1">
 
             <!-- PAGE 1: HOME (Hero -> Compact Telemetry -> Gallery) -->
             <ScrollViewer x:Name="HomePage"
@@ -25,17 +22,15 @@
                           HorizontalScrollMode="Disabled"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Grid Padding="32,80,32,32">
-                    <StackPanel MaxWidth="1040"
+                <Grid Padding="24,20,24,24">
+                    <StackPanel MaxWidth="912"
                                 HorizontalAlignment="Stretch"
                                 Spacing="16">
 
                         <!-- 1. HERO REPLAY DECK -->
                         <Grid x:Name="HeroContainer">
-                            <Border x:Name="HeroCard"
-                                    Style="{StaticResource Card}"
-                                    Background="{ThemeResource HeroCardBrush}"
-                                    Padding="20">
+                            <Border x:Name="HeroCard" Style="{StaticResource Card}"
+                                    Background="{ThemeResource HeroCardBrush}" Padding="20">
                                 <Grid ColumnSpacing="20">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -43,68 +38,47 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <Border Width="52" Height="52" CornerRadius="8"
-                                            Background="{ThemeResource AccentDimBrush}" VerticalAlignment="Center">
-                                        <FontIcon Glyph="&#xE7B5;" FontSize="24"
-                                                  Foreground="{ThemeResource AccentIndicatorBrush}"/>
+                                    <Border Width="64" Height="64" CornerRadius="8" VerticalAlignment="Center"
+                                            Background="{ThemeResource SurfaceElevatedBrush}" BorderThickness="1"
+                                            BorderBrush="{ThemeResource SurfaceBorderBrush}">
+                                        <local:Guilloche x:Name="HeroOrnament" Width="58" Height="58"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
 
-                                    <!-- Status & Buffer Info + Hardware Keycap -->
-                                    <StackPanel Grid.Column="1"
-                                                VerticalAlignment="Center"
-                                                Spacing="4">
-                                        <TextBlock Text="Instant Replay" Style="{StaticResource DisplayTitle}"
-                                                   AutomationProperties.HeadingLevel="Level1"/>
-                                        <TextBlock x:Name="HeroBufferText" Text="0 s / 60 s"
-                                                   Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis"/>
-
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="instant replay" Style="{StaticResource DisplayTitle}"
+                                                       AutomationProperties.HeadingLevel="Level1" VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="HeroBufferText" Grid.Column="1" Text="0 s / 60 s"
+                                                       Style="{StaticResource Mono}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="HeroSummaryText"
-                                                       Text="Buffering last 60 seconds at 60 fps · whole desktop"
-                                                       Style="{StaticResource Caption}"
-                                                       LineHeight="16"
-                                                       LineStackingStrategy="BlockLineHeight"
-                                                       Foreground="{ThemeResource TextSecondaryBrush}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1"
-                                                    Background="{ThemeResource KeycapBgBrush}"
-                                                    BorderBrush="{ThemeResource KeycapBorderBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="4"
-                                                    Height="20"
-                                                    Padding="7,0"
-                                                    Margin="0,1,0,0"
-                                                    VerticalAlignment="Center">
-                                                <TextBlock x:Name="HeroHotkeyText"
-                                                           Text="Shift + s"
-                                                           Style="{StaticResource Mono}"
-                                                           FontSize="11"
-                                                           LineHeight="12"
-                                                           LineStackingStrategy="BlockLineHeight"
-                                                           Margin="0,0,0,1"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{ThemeResource TextPrimaryBrush}"/>
+                                            <Border Background="{ThemeResource KeycapBgBrush}" BorderBrush="{ThemeResource KeycapBorderBrush}"
+                                                    BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                <TextBlock x:Name="HeroHotkeyText" Text="shift + s" Style="{StaticResource Mono}"
+                                                           Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                             </Border>
+                                            <TextBlock x:Name="HeroSummaryText" Grid.Column="1" Text="60 fps · whole desktop"
+                                                       Style="{StaticResource Caption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                         </Grid>
                                     </StackPanel>
 
-                                    <!-- Primary Actions -->
-                                    <StackPanel Grid.Column="2"
-                                                Orientation="Horizontal"
-                                                Spacing="8"
-                                                VerticalAlignment="Center">
-                                        <Button x:Name="SaveReplayButton"
-                                                AutomationProperties.Name="Save replay"
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button FontFamily="Segoe UI" x:Name="SaveReplayButton"
+                                                AutomationProperties.Name="save replay"
                                                 Visibility="Collapsed"
                                                 Style="{StaticResource AccentButtonStyle}"
                                                 MinWidth="128"
                                                 Click="SaveReplayButton_Click"
-                                                ToolTipService.ToolTip="Save buffered replay now">
+                                                ToolTipService.ToolTip="save buffered replay now">
                                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                 <Path Width="14" Height="14" Stretch="Uniform"
                                                       Stroke="{Binding Foreground, ElementName=SaveReplayButton}"
@@ -115,15 +89,15 @@
                                                       VerticalAlignment="Center"
                                                       Data="M 5.5,3.5 H 18.5 A 1.5,1.5 0 0 1 20,5 V 20.5 L 12,15.8 L 4,20.5 V 5 A 1.5,1.5 0 0 1 5.5,3.5 Z"/>
                                                 <TextBlock x:Name="SaveReplayLabel"
-                                                           Text="Save replay"
+                                                           Text="save replay"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
 
-                                        <Button x:Name="StartReplayButton"
-                                                AutomationProperties.Name="Start replay"
+                                        <Button FontFamily="Segoe UI" x:Name="StartReplayButton"
+                                                AutomationProperties.Name="start replay"
                                                 Style="{StaticResource AccentButtonStyle}"
                                                 MinWidth="132"
                                                 Click="StartStopButton_Click">
@@ -137,15 +111,15 @@
                                                       VerticalAlignment="Center"
                                                       Data="M 7,5 L 19,12 L 7,19 Z"/>
                                                 <TextBlock x:Name="StartReplayText"
-                                                           Text="Start replay"
+                                                           Text="start replay"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
 
-                                        <Button x:Name="StopReplayButton"
-                                                AutomationProperties.Name="Stop"
+                                        <Button FontFamily="Segoe UI" x:Name="StopReplayButton"
+                                                AutomationProperties.Name="stop"
                                                 Visibility="Collapsed"
                                                 Style="{StaticResource DangerButtonStyle}"
                                                 MinWidth="96"
@@ -160,7 +134,7 @@
                                                       VerticalAlignment="Center"
                                                       Data="M 6,4 H 18 A 2,2 0 0 1 20,6 V 18 A 2,2 0 0 1 18,20 H 6 A 2,2 0 0 1 4,18 V 6 A 2,2 0 0 1 6,4 Z"/>
                                                 <TextBlock x:Name="StopReplayText"
-                                                           Text="Stop"
+                                                           Text="stop"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
@@ -175,7 +149,6 @@
                                     CornerRadius="8"
                                     BorderBrush="{ThemeResource AccentBrush}"
                                     BorderThickness="1.5"
-                                    Background="{ThemeResource AccentDimBrush}"
                                     Opacity="0"
                                     IsHitTestVisible="False"/>
                         </Grid>
@@ -218,12 +191,12 @@
                                               Data="M 7,7 H 17 V 17 H 7 Z M 9.5,2 V 5 M 14.5,2 V 5 M 9.5,19 V 22 M 14.5,19 V 22 M 2,9.5 H 5 M 2,14.5 H 5 M 19,9.5 H 22 M 19,14.5 H 22 M 5,6.5 A 1.5,1.5 0 0 1 6.5,5 H 17.5 A 1.5,1.5 0 0 1 19,6.5 V 17.5 A 1.5,1.5 0 0 1 17.5,19 H 6.5 A 1.5,1.5 0 0 1 5,17.5 Z"/>
 
                                         <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                            <TextBlock Text="Cpu usage"
-                                                       FontSize="12.5"
+                                            <TextBlock Text="cpu usage"
+                                                       FontSize="13"
                                                        FontWeight="Medium"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="CpuHintText"
-                                                       Text="Overall processor load"
+                                                       Text="overall processor load"
                                                        FontSize="11"
                                                        Foreground="{ThemeResource TextTertiaryBrush}"
                                                        TextTrimming="CharacterEllipsis"/>
@@ -287,12 +260,12 @@
                                               Data="M 3,6.5 H 21 A 1.5,1.5 0 0 1 22.5,8 V 14.5 A 1.5,1.5 0 0 1 21,16 H 3 A 1.5,1.5 0 0 1 1.5,14.5 V 8 A 1.5,1.5 0 0 1 3,6.5 Z M 7,10 V 12.5 M 12,10 V 12.5 M 17,10 V 12.5 M 6,16 V 19.5 M 10,16 V 19.5 M 14,16 V 19.5 M 18,16 V 19.5"/>
 
                                         <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                            <TextBlock Text="System memory"
-                                                       FontSize="12.5"
+                                            <TextBlock Text="system memory"
+                                                       FontSize="13"
                                                        FontWeight="Medium"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="RamHintText"
-                                                       Text="In use"
+                                                       Text="in use"
                                                        FontSize="11"
                                                        Typography.NumeralAlignment="Tabular"
                                                        Foreground="{ThemeResource TextTertiaryBrush}"
@@ -337,7 +310,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                    <TextBlock Text="Gallery"
+                                    <TextBlock Text="gallery" AutomationProperties.HeadingLevel="Level2"
                                                Style="{StaticResource SectionTitle}"
                                                VerticalAlignment="Center"/>
                                     <TextBlock x:Name="GalleryCountText"
@@ -348,14 +321,14 @@
                                                VerticalAlignment="Center"/>
                                 </StackPanel>
 
-                                <Button x:Name="OpenFolderButton"
+                                <Button FontFamily="Segoe UI" x:Name="OpenFolderButton"
                                         Grid.Column="1"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Height="32"
                                         CornerRadius="4"
                                         Padding="12,0"
                                         Click="OpenReplaysFolderButton_Click"
-                                        ToolTipService.ToolTip="Open videos\replays folder">
+                                        ToolTipService.ToolTip="open replay folder">
                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <Path Width="14" Height="14" Stretch="Uniform"
                                               Stroke="{Binding Foreground, ElementName=OpenFolderButton}"
@@ -366,8 +339,8 @@
                                               VerticalAlignment="Center"
                                               Data="M 3,6.5 A 1.5,1.5 0 0 1 4.5,5 H 9.5 L 11.5,7.5 H 19.5 A 1.5,1.5 0 0 1 21,9 V 18 A 1.5,1.5 0 0 1 19.5,19.5 H 4.5 A 1.5,1.5 0 0 1 3,18 Z"/>
                                         <TextBlock x:Name="GalleryOpenFolderText"
-                                                   Text="Open folder"
-                                                   FontSize="12.5"
+                                                   Text="open folder"
+                                                   FontSize="13"
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
@@ -382,28 +355,35 @@
 
                             <!-- Clip Grid: 3 * 296 + 2 * 12 = 912px aligned cleanly under Hero -->
                             <GridView x:Name="GalleryGrid"
-                                      Margin="0,0,-12,0"
+                                      Loaded="GalleryGrid_Loaded" SizeChanged="GalleryGrid_SizeChanged"
+                                      Margin="-6,0" Padding="0"
                                       ItemContainerStyle="{StaticResource CleanGalleryGridViewItemStyle}"
                                       SelectionMode="None"
                                       IsItemClickEnabled="True"
                                       ItemClick="GalleryGrid_ItemClick"
                                       ScrollViewer.VerticalScrollMode="Disabled"
                                       ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <GridView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" ItemWidth="270" ItemHeight="220"/>
+                                    </ItemsPanelTemplate>
+                                </GridView.ItemsPanel>
                                 <GridView.ItemContainerTransitions>
                                     <TransitionCollection/>
                                 </GridView.ItemContainerTransitions>
                                 <GridView.ItemTemplate>
                                     <DataTemplate x:DataType="local:ReplayItem">
                                         <Border x:Name="CardRoot"
-                                                Width="296"
                                                 CornerRadius="8"
                                                 Background="{ThemeResource SurfaceBrush}"
                                                 BorderBrush="{ThemeResource SurfaceBorderBrush}"
                                                 BorderThickness="1">
-                                            <StackPanel>
-                                                <!-- 16:9 Thumbnail Viewport (296x168 on 4px grid) -->
-                                                <Grid Height="168"
-                                                      CornerRadius="7,7,0,0"
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="60"/>
+                                                </Grid.RowDefinitions>
+                                                <Grid CornerRadius="7,7,0,0"
                                                       Background="{ThemeResource SurfaceElevatedBrush}">
                                                     <Path Width="24" Height="20" Stretch="Uniform"
                                                           Stroke="{ThemeResource TextTertiaryBrush}"
@@ -531,7 +511,7 @@
                                                 </Grid>
 
                                                 <!-- Card Footer (timestamp + edit marker & resolution — never repeats badge label) -->
-                                                <Grid Padding="12,10,8,10" ColumnSpacing="8">
+                                                <Grid Grid.Row="1" Padding="12,8" ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
@@ -539,7 +519,7 @@
 
                                                     <StackPanel VerticalAlignment="Center" Spacing="2">
                                                         <TextBlock Text="{x:Bind CardTitleText, Mode=OneWay}"
-                                                                   FontSize="12.5"
+                                                                   FontSize="13"
                                                                    FontWeight="Medium"
                                                                    Typography.NumeralAlignment="Tabular"
                                                                    TextTrimming="CharacterEllipsis"
@@ -555,9 +535,9 @@
                                                                 Orientation="Horizontal"
                                                                 Spacing="4"
                                                                 VerticalAlignment="Center">
-                                                        <Button Style="{StaticResource MediaCardActionButtonStyle}"
+                                                        <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
                                                                 Click="CardOpenFolderButton_Click"
-                                                                ToolTipService.ToolTip="Show in explorer">
+                                                                ToolTipService.ToolTip="show in file explorer">
                                                             <Path Width="14" Height="14" Stretch="Uniform"
                                                                   IsHitTestVisible="False"
                                                                   Stroke="{ThemeResource TextSecondaryBrush}"
@@ -568,9 +548,9 @@
                                                                   VerticalAlignment="Center"
                                                                   Data="M 3,6.5 A 1.5,1.5 0 0 1 4.5,5 H 9.5 L 11.5,7.5 H 19.5 A 1.5,1.5 0 0 1 21,9 V 18 A 1.5,1.5 0 0 1 19.5,19.5 H 4.5 A 1.5,1.5 0 0 1 3,18 Z"/>
                                                         </Button>
-                                                        <Button Style="{StaticResource MediaCardActionButtonStyle}"
+                                                        <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
                                                                 Click="CardDeleteButton_Click"
-                                                                ToolTipService.ToolTip="Delete clip">
+                                                                ToolTipService.ToolTip="delete clip">
                                                             <Path Width="14" Height="14" Stretch="Uniform"
                                                                   IsHitTestVisible="False"
                                                                   Stroke="{ThemeResource TextSecondaryBrush}"
@@ -583,7 +563,7 @@
                                                         </Button>
                                                     </StackPanel>
                                                 </Grid>
-                                            </StackPanel>
+                                            </Grid>
                                         </Border>
                                     </DataTemplate>
                                 </GridView.ItemTemplate>
@@ -609,12 +589,12 @@
                                               VerticalAlignment="Center"
                                               Data="M 2,3 H 14 C 14.8,3 15.5,3.7 15.5,4.5 V 11.5 C 15.5,12.3 14.8,13 14,13 H 2 C 1.2,13 0.5,12.3 0.5,11.5 V 4.5 C 0.5,3.7 1.2,3 2,3 Z M 6.5,5.5 L 10.5,8 L 6.5,10.5 Z"/>
                                     </Border>
-                                    <TextBlock Text="No replays yet"
+                                    <TextBlock Text="no replays yet"
                                                FontSize="15"
                                                FontWeight="SemiBold"
                                                HorizontalAlignment="Center"/>
                                     <TextBlock x:Name="EmptyGalleryHintText"
-                                               Text="Press shift + s while recording to save your first clip to videos\replays"
+                                               Text="press shift + s while recording to save your first clip."
                                                Style="{StaticResource Mono}"
                                                TextAlignment="Center"
                                                TextWrapping="Wrap"
@@ -636,33 +616,33 @@
                           HorizontalScrollMode="Disabled"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Grid Padding="32,80,32,128">
+                <Grid Padding="24,20,24,24">
                     <StackPanel x:Name="SettingsContent"
-                                MaxWidth="840"
+                                MaxWidth="720"
                                 HorizontalAlignment="Stretch"
                                 Spacing="24">
 
-                        <TextBlock Text="Settings" Style="{StaticResource PageTitle}" AutomationProperties.HeadingLevel="Level1"/>
+                        <TextBlock Text="settings" Style="{StaticResource PageTitle}" AutomationProperties.HeadingLevel="Level1"/>
 
                         <!-- 1. REPLAY TARGET -->
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Replay target" Style="{StaticResource SettingGroupHeader}"/>
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="replay target" Style="{StaticResource SettingGroupHeader}" AutomationProperties.HeadingLevel="Level2"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="Capture target">
-                                        <ComboBox x:Name="CaptureTargetCombo"
+                                    <local:SettingRow Label="capture target">
+                                        <ComboBox FontFamily="Segoe UI" x:Name="CaptureTargetCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="CaptureTargetCombo_SelectionChanged">
-                                            <ComboBoxItem Content="Whole desktop"/>
-                                            <ComboBoxItem Content="Game capture"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="whole desktop"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="game capture"/>
                                         </ComboBox>
                                     </local:SettingRow>
 
                                     <Rectangle x:Name="MonitorDivider" Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow x:Name="CaptureMonitorRow" Label="Display">
-                                        <ComboBox x:Name="CaptureMonitorCombo"
+                                    <local:SettingRow x:Name="CaptureMonitorRow" Label="display">
+                                        <ComboBox FontFamily="Segoe UI" x:Name="CaptureMonitorCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="CaptureMonitorCombo_SelectionChanged"/>
@@ -670,30 +650,30 @@
 
                                     <Rectangle x:Name="GamesRuleDivider" Height="1" Fill="{ThemeResource HairlineBrush}" Visibility="Collapsed"/>
 
-                                    <local:SettingRow x:Name="CustomGamesRow" Label="Recognized games" Visibility="Collapsed">
+                                    <local:SettingRow x:Name="CustomGamesRow" Label="recognized games" Visibility="Collapsed">
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="GamesSummaryText"
-                                                       Text="8,460 built-in"
+                                                       Text="built-in game catalog"
                                                        FontSize="12"
                                                        Foreground="{ThemeResource TextSecondaryBrush}"
                                                        VerticalAlignment="Center"
                                                        TextTrimming="CharacterEllipsis"/>
-                                            <Button Grid.Column="1"
+                                            <Button FontFamily="Segoe UI" Grid.Column="1"
                                                     Style="{StaticResource SettingsInputButtonStyle}"
                                                     Padding="12,0"
-                                                    Content="Manage..."
+                                                    Content="manage..."
                                                     Click="ManageGamesButton_Click"/>
                                         </Grid>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Show mouse cursor">
-                                        <ToggleSwitch x:Name="CaptureCursorToggle"
+                                    <local:SettingRow Label="show mouse cursor">
+                                        <ToggleSwitch FontFamily="Segoe UI" x:Name="CaptureCursorToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -706,72 +686,72 @@
 
                         <!-- 2. VIDEO QUALITY -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Video quality" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="video quality" Style="{StaticResource SettingGroupHeader}" AutomationProperties.HeadingLevel="Level2"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="Replay duration">
-                                        <Grid ColumnSpacing="8">
+                                    <local:SettingRow Label="replay duration">
+                                        <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <ComboBox x:Name="DurationCombo" Grid.ColumnSpan="2"
+                                            <ComboBox FontFamily="Segoe UI" x:Name="DurationCombo"
                                                       HorizontalAlignment="Stretch"
                                                       VerticalAlignment="Center"
                                                       CornerRadius="4"
                                                       SelectionChanged="DurationCombo_SelectionChanged">
-                                                <ComboBoxItem Content="30 seconds"/>
-                                                <ComboBoxItem Content="60 seconds"/>
-                                                <ComboBoxItem Content="120 seconds"/>
-                                                <ComboBoxItem Content="Custom"/>
+                                                <ComboBoxItem FontFamily="Segoe UI" Content="30 seconds"/>
+                                                <ComboBoxItem FontFamily="Segoe UI" Content="60 seconds"/>
+                                                <ComboBoxItem FontFamily="Segoe UI" Content="120 seconds"/>
+                                                <ComboBoxItem FontFamily="Segoe UI" Content="custom"/>
                                             </ComboBox>
-                                            <Grid x:Name="DurationCustomWrap" Grid.Column="1"
-                                                  Width="96"
-                                                  MinHeight="32"
-                                                  HorizontalAlignment="Stretch"
-                                                  VerticalAlignment="Center"
-                                                  Visibility="Collapsed">
-                                                <TextBox x:Name="DurationCustomBox"
+                                            <Canvas x:Name="DurationCustomWrap" Grid.Column="1"
+                                                    Width="0" Height="32" Visibility="Collapsed"
+                                                    VerticalAlignment="Center" IsHitTestVisible="False"
+                                                    SizeChanged="ClipDisclosure_SizeChanged">
+                                                <Grid x:Name="DurationCustomContent" Canvas.Left="8" Width="96" Height="32">
+                                                <TextBox FontFamily="Segoe UI" x:Name="DurationCustomBox"
                                                          Style="{StaticResource CompactNumberTextBoxStyle}"
-                                                         AutomationProperties.Name="Replay duration in seconds"
+                                                         AutomationProperties.Name="replay duration in seconds"
                                                          PlaceholderText="60"
                                                          InputScope="Number"
                                                          TextChanged="DurationCustomBox_TextChanged"
                                                          LostFocus="DurationCustomBox_LostFocus"/>
                                                 <TextBlock Text="s"
-                                                           FontSize="12.5"
+                                                           FontSize="13"
                                                            Foreground="{ThemeResource TextTertiaryBrush}"
                                                            HorizontalAlignment="Right"
                                                            VerticalAlignment="Center"
                                                            Margin="0,0,12,0"
                                                            IsHitTestVisible="False"/>
-                                            </Grid>
+                                                </Grid>
+                                            </Canvas>
                                         </Grid>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Frame rate">
-                                        <ComboBox x:Name="FpsCombo"
+                                    <local:SettingRow Label="frame rate">
+                                        <ComboBox FontFamily="Segoe UI" x:Name="FpsCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="FpsCombo_SelectionChanged">
-                                            <ComboBoxItem Content="30 fps"/>
-                                            <ComboBoxItem Content="60 fps"/>
-                                            <ComboBoxItem Content="120 fps"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="30 fps"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="60 fps"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="120 fps"/>
                                         </ComboBox>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Quality">
-                                        <ComboBox x:Name="QualityCombo"
+                                    <local:SettingRow Label="quality">
+                                        <ComboBox FontFamily="Segoe UI" x:Name="QualityCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="QualityCombo_SelectionChanged">
-                                            <ComboBoxItem Content="Low"/>
-                                            <ComboBoxItem Content="Balanced"/>
-                                            <ComboBoxItem Content="High"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="low"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="balanced"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="high"/>
                                         </ComboBox>
                                     </local:SettingRow>
                                 </StackPanel>
@@ -780,11 +760,11 @@
 
                         <!-- 3. AUDIO -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Audio" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="audio" Style="{StaticResource SettingGroupHeader}" AutomationProperties.HeadingLevel="Level2"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="Microphone">
-                                        <ComboBox x:Name="MicCombo"
+                                    <local:SettingRow Label="microphone">
+                                        <ComboBox FontFamily="Segoe UI" x:Name="MicCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="MicCombo_SelectionChanged"/>
@@ -810,7 +790,7 @@
                                                      VerticalAlignment="Center"/>
                                             <TextBlock x:Name="MicStatusLabel"
                                                        Grid.Column="1"
-                                                       Text="Detecting active microphone..."
+                                                       Text="detecting active microphone..."
                                                        FontSize="12"
                                                        Foreground="{ThemeResource TextSecondaryBrush}"
                                                        TextTrimming="CharacterEllipsis"
@@ -830,7 +810,7 @@
                                                     </Border.RenderTransform>
                                                 </Border>
                                             </Border>
-                                            <Button x:Name="DetectMicButton"
+                                            <Button FontFamily="Segoe UI" x:Name="DetectMicButton"
                                                     Grid.Column="3"
                                                     Style="{StaticResource BaseButtonStyle}"
                                                     Height="28"
@@ -838,16 +818,16 @@
                                                     CornerRadius="4"
                                                     Padding="12,0"
                                                     FontSize="12"
-                                                    Content="Detect active"
+                                                    Content="detect active"
                                                     Click="DetectMicButton_Click"
-                                                    ToolTipService.ToolTip="Scan active microphones and select speaking input or default"/>
+                                                    ToolTipService.ToolTip="scan active microphones and select speaking input or default"/>
                                         </Grid>
                                     </Border>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Record microphone">
-                                        <ToggleSwitch x:Name="MicToggle"
+                                    <local:SettingRow Label="record microphone">
+                                        <ToggleSwitch FontFamily="Segoe UI" x:Name="MicToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -857,8 +837,8 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow x:Name="RecordAudioRow" Label="Record system audio">
-                                        <ToggleSwitch x:Name="SysAudioToggle"
+                                    <local:SettingRow x:Name="RecordAudioRow" Label="record system audio">
+                                        <ToggleSwitch FontFamily="Segoe UI" x:Name="SysAudioToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -866,21 +846,22 @@
                                                       Toggled="SysAudioToggle_Changed"/>
                                     </local:SettingRow>
 
-                                    <StackPanel x:Name="SystemAudioSourceSection" Visibility="Visible">
+                                    <Grid x:Name="SystemAudioSourceSection" SizeChanged="ClipDisclosure_SizeChanged">
+                                    <StackPanel x:Name="SystemAudioSourceContent" VerticalAlignment="Top">
                                         <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                        <local:SettingRow Label="System audio source">
-                                            <ComboBox x:Name="SysAudioModeCombo"
+                                        <local:SettingRow Label="system audio source">
+                                            <ComboBox FontFamily="Segoe UI" x:Name="SysAudioModeCombo"
                                                       HorizontalAlignment="Stretch"
                                                       CornerRadius="4"
                                                       SelectionChanged="SysAudioModeCombo_SelectionChanged">
-                                                <ComboBoxItem Content="All desktop audio"/>
-                                                <ComboBoxItem Content="Selected apps only"/>
+                                                <ComboBoxItem FontFamily="Segoe UI" Content="all desktop audio"/>
+                                                <ComboBoxItem FontFamily="Segoe UI" Content="selected apps only"/>
                                             </ComboBox>
                                         </local:SettingRow>
 
-                                        <Border x:Name="SelectedAudioAppsPanel"
-                                                Visibility="Collapsed"
+                                        <Grid x:Name="SelectedAudioAppsPanel" Visibility="Collapsed" IsHitTestVisible="False" SizeChanged="ClipDisclosure_SizeChanged">
+                                            <Border x:Name="SelectedAudioAppsContent" VerticalAlignment="Top"
                                                 Background="{ThemeResource CardSecondaryBrush}"
                                                 BorderBrush="{ThemeResource HairlineBrush}"
                                                 BorderThickness="1"
@@ -893,11 +874,11 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="Recorded applications"
+                                                    <TextBlock Text="recorded applications"
                                                                FontSize="12"
                                                                Foreground="{ThemeResource TextSecondaryBrush}"
                                                                VerticalAlignment="Center"/>
-                                                    <Button x:Name="RefreshAudioAppsButton"
+                                                    <Button FontFamily="Segoe UI" x:Name="RefreshAudioAppsButton"
                                                             Grid.Column="1"
                                                             Style="{StaticResource BaseButtonStyle}"
                                                             Height="26"
@@ -905,21 +886,23 @@
                                                             Padding="10,0"
                                                             CornerRadius="4"
                                                             FontSize="11.5"
-                                                            Content="Refresh"
+                                                            Content="refresh"
                                                             Click="RefreshAudioAppsButton_Click"/>
                                                 </Grid>
-                                                <StackPanel x:Name="AudioAppsListPanel" Spacing="4"/>
+                                                <ScrollViewer Height="146" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
+                                                    <StackPanel x:Name="AudioAppsListPanel" Spacing="4"/>
+                                                </ScrollViewer>
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBox x:Name="AddAudioAppBox"
+                                                    <TextBox FontFamily="Segoe UI" x:Name="AddAudioAppBox"
                                                              Style="{StaticResource CompactNumberTextBoxStyle}"
                                                              Padding="12,0"
-                                                             PlaceholderText="Executable name, e.g. discord.exe"
+                                                             PlaceholderText="executable name, e.g. discord.exe"
                                                              KeyDown="AddAudioAppBox_KeyDown"/>
-                                                    <Button x:Name="AddAudioAppButton"
+                                                    <Button FontFamily="Segoe UI" x:Name="AddAudioAppButton"
                                                             Grid.Column="1"
                                                             Style="{StaticResource BaseButtonStyle}"
                                                             Height="32"
@@ -927,22 +910,24 @@
                                                             Padding="12,0"
                                                             CornerRadius="4"
                                                             FontSize="12"
-                                                            Content="Add"
+                                                            Content="add"
                                                             Click="AddAudioAppButton_Click"/>
                                                 </Grid>
                                             </StackPanel>
                                         </Border>
+                                        </Grid>
                                     </StackPanel>
+                                    </Grid>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
 
                         <!-- 4. STORAGE AND HOTKEYS -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Storage and hotkeys" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="storage and hotkeys" Style="{StaticResource SettingGroupHeader}" AutomationProperties.HeadingLevel="Level2"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <TextBlock Text="Save location"
+                                    <TextBlock Text="save location"
                                                FontSize="13.5"
                                                Foreground="{ThemeResource TextPrimaryBrush}"
                                                Margin="0,12,0,8"/>
@@ -951,12 +936,12 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="248"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="SaveLocationBox"
+                                        <TextBox FontFamily="Segoe UI" x:Name="SaveLocationBox"
                                                  Grid.Column="0"
                                                  Style="{StaticResource CompactNumberTextBoxStyle}"
                                                  Padding="10,0,10,1"
                                                  TextChanged="SaveLocationBox_TextChanged"/>
-                                        <Button x:Name="BrowseSaveLocationButton"
+                                        <Button FontFamily="Segoe UI" x:Name="BrowseSaveLocationButton"
                                                 Grid.Column="1"
                                                 HorizontalAlignment="Stretch"
                                                 Style="{StaticResource SettingsInputButtonStyle}"
@@ -968,8 +953,8 @@
                                                       StrokeLineJoin="Round"
                                                       Data="M 1.5,2 H 5.5 L 7,3.5 H 13.5 C 14.3,3.5 15,4.2 15,5 V 11 C 15,11.8 14.3,12.5 13.5,12.5 H 2.5 C 1.7,12.5 1,11.8 1,11 V 3 C 1,2.4 1.2,2 1.5,2 Z"/>
                                                 <TextBlock x:Name="BrowseSaveText"
-                                                           Text="Browse"
-                                                           FontSize="12.5"
+                                                           Text="browse"
+                                                           FontSize="13"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
@@ -977,8 +962,8 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Save replay hotkey">
-                                        <Button x:Name="HotkeyCaptureButton"
+                                    <local:SettingRow Label="save replay hotkey">
+                                        <Button FontFamily="Segoe UI" x:Name="HotkeyCaptureButton"
                                                 HorizontalAlignment="Stretch"
                                                 Style="{StaticResource SettingsInputButtonStyle}"
                                                 Click="HotkeyCaptureButton_Click">
@@ -991,8 +976,8 @@
                                                       StrokeEndLineCap="Round"
                                                       Data="M 1.5,1 H 12.5 C 13.3,1 14,1.7 14,2.5 V 8.5 C 14,9.3 13.3,10 12.5,10 H 1.5 C 0.7,10 0,9.3 0,8.5 V 2.5 C 0,1.7 0.7,1 1.5,1 Z M 3.5,4 H 4.5 M 6.5,4 H 7.5 M 9.5,4 H 10.5 M 4,7 H 10"/>
                                                 <TextBlock x:Name="HotkeyCaptureText"
-                                                           Text="Shift + s"
-                                                           FontSize="12.5"
+                                                           Text="shift + s"
+                                                           FontSize="13"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
@@ -1003,11 +988,11 @@
 
                         <!-- 5. APP -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="App" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="app" Style="{StaticResource SettingGroupHeader}" AutomationProperties.HeadingLevel="Level2"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="Start with windows">
-                                        <ToggleSwitch x:Name="StartupToggle"
+                                    <local:SettingRow Label="start with windows">
+                                        <ToggleSwitch FontFamily="Segoe UI" x:Name="StartupToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -1017,9 +1002,9 @@
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Dark mode">
-                                        <ToggleSwitch x:Name="ThemeToggle"
-                                                      AutomationProperties.Name="Dark mode toggle"
+                                    <local:SettingRow Label="dark mode">
+                                        <ToggleSwitch FontFamily="Segoe UI" x:Name="ThemeToggle"
+                                                      AutomationProperties.Name="dark mode toggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -1032,7 +1017,7 @@
 
                         <!-- 6. ADVANCED -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Advanced" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="advanced" Style="{StaticResource SettingGroupHeader}" AutomationProperties.HeadingLevel="Level2"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <Border Background="{ThemeResource WarningBgBrush}"
@@ -1056,11 +1041,11 @@
                                                   Margin="0,2,0,0"
                                                   Data="M 8,2 L 14.5,13.5 H 1.5 Z M 8,6.5 V 9.5 M 8,11.5 V 11.8"/>
                                             <StackPanel Grid.Column="1" Spacing="2">
-                                                <TextBlock Text="Capture compatibility"
-                                                           FontSize="12.5"
+                                                <TextBlock Text="capture compatibility"
+                                                           FontSize="13"
                                                            FontWeight="SemiBold"
                                                            Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                                <TextBlock Text="Encoder and capture-method changes can affect performance and fullscreen compatibility. auto and wgc are recommended."
+                                                <TextBlock Text="encoder and capture-method changes can affect performance and fullscreen compatibility. auto and windows graphics capture are recommended."
                                                            FontSize="12"
                                                            TextWrapping="Wrap"
                                                            Foreground="{ThemeResource TextSecondaryBrush}"/>
@@ -1068,34 +1053,34 @@
                                         </Grid>
                                     </Border>
 
-                                    <local:SettingRow Label="Video encoder">
-                                        <ComboBox x:Name="EncoderCombo"
+                                    <local:SettingRow Label="video encoder">
+                                        <ComboBox FontFamily="Segoe UI" x:Name="EncoderCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="EncoderCombo_SelectionChanged">
-                                            <ComboBoxItem Content="Auto"/>
-                                            <ComboBoxItem Content="Hardware"/>
-                                            <ComboBoxItem Content="Software"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="auto"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="hardware"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="software"/>
                                         </ComboBox>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Capture method">
-                                        <ComboBox x:Name="CaptureMethodCombo"
+                                    <local:SettingRow Label="capture method">
+                                        <ComboBox FontFamily="Segoe UI" x:Name="CaptureMethodCombo"
                                                   HorizontalAlignment="Stretch"
                                                   CornerRadius="4"
                                                   SelectionChanged="CaptureMethodCombo_SelectionChanged">
-                                            <ComboBoxItem x:Name="CaptureAutoItem" Content="Auto"/>
-                                            <ComboBoxItem x:Name="CaptureWgcItem" Content="Wgc"/>
-                                            <ComboBoxItem x:Name="CaptureDxgiItem" Content="Dxgi"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" x:Name="CaptureAutoItem" Content="auto"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" x:Name="CaptureWgcItem" Content="windows graphics capture"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" x:Name="CaptureDxgiItem" Content="dxgi desktop duplication"/>
                                         </ComboBox>
                                     </local:SettingRow>
 
                                     <Rectangle Height="1" Fill="{ThemeResource HairlineBrush}"/>
 
-                                    <local:SettingRow Label="Debug logging">
-                                        <ToggleSwitch x:Name="DebugToggle"
+                                    <local:SettingRow Label="debug logging">
+                                        <ToggleSwitch FontFamily="Segoe UI" x:Name="DebugToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -1108,11 +1093,11 @@
 
                         <!-- 7. UPDATES -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Updates" Style="{StaticResource SettingGroupHeader}"/>
+                            <TextBlock Text="updates" Style="{StaticResource SettingGroupHeader}" AutomationProperties.HeadingLevel="Level2"/>
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <local:SettingRow Label="Check automatically">
-                                        <ToggleSwitch x:Name="AutoUpdateToggle"
+                                    <local:SettingRow Label="check automatically">
+                                        <ToggleSwitch FontFamily="Segoe UI" x:Name="AutoUpdateToggle"
                                                       HorizontalAlignment="Right"
                                                       MinWidth="0"
                                                       OnContent=""
@@ -1129,17 +1114,17 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                             <TextBlock x:Name="UpdateVersionText"
-                                                       Text="Version 1.0.5"
+                                                       Text="version"
                                                        FontSize="13.5"
                                                        Foreground="{ThemeResource TextPrimaryBrush}"/>
                                             <TextBlock x:Name="UpdateStatusText"
-                                                       Text="Check github releases for newer builds"
+                                                       Text="check github releases for newer builds"
                                                        FontSize="12"
                                                        Foreground="{ThemeResource TextSecondaryBrush}"/>
                                         </StackPanel>
-                                        <Button x:Name="CheckUpdateButton"
+                                        <Button FontFamily="Segoe UI" x:Name="CheckUpdateButton"
                                                 Grid.Column="1"
-                                                AutomationProperties.Name="Check for updates"
+                                                AutomationProperties.Name="check for updates"
                                                 Style="{StaticResource BaseButtonStyle}"
                                                 Height="32"
                                                 MinHeight="32"
@@ -1148,8 +1133,8 @@
                                                 VerticalAlignment="Center"
                                                 Click="CheckUpdateButton_Click">
                                             <TextBlock x:Name="CheckUpdateButtonText"
-                                                       Text="Check for updates"
-                                                       FontSize="12.5"
+                                                       Text="check for updates"
+                                                       FontSize="13"
                                                        FontWeight="Medium"
                                                        VerticalAlignment="Center"/>
                                         </Button>
@@ -1166,7 +1151,7 @@
             <Grid x:Name="ViewerPage"
                   Visibility="Collapsed"
                   Background="{ThemeResource BgBrush}"
-                  Padding="24,68,24,20"
+                  Padding="28,20,28,20"
                   Canvas.ZIndex="10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -1175,15 +1160,16 @@
                 </Grid.RowDefinitions>
 
                 <!-- Properly spaced non-colliding viewer toolbar -->
-                <Grid x:Name="ViewerToolbar" Margin="0,0,0,12" Height="36" ColumnSpacing="16">
+                <Grid x:Name="ViewerToolbar" Margin="0,0,0,16" MinHeight="48" Padding="8,0" ColumnSpacing="12"
+                      Background="{ThemeResource SurfaceBrush}" BorderBrush="{ThemeResource SurfaceBorderBrush}" BorderThickness="1" CornerRadius="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button x:Name="ViewerBackButton"
-                            AutomationProperties.Name="Back to gallery"
+                    <Button FontFamily="Segoe UI" x:Name="ViewerBackButton"
+                            AutomationProperties.Name="back to gallery"
                             Style="{StaticResource BaseButtonStyle}"
                             Height="32"
                             MinHeight="32"
@@ -1200,8 +1186,8 @@
                                   VerticalAlignment="Center"
                                   Data="M 19,12 H 5 M 11,6 L 5,12 L 11,18"/>
                             <TextBlock x:Name="ViewerBackLabel"
-                                       Text="Back to gallery"
-                                       FontSize="12.5"
+                                       Text="back to gallery"
+                                       FontSize="13"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
@@ -1222,7 +1208,7 @@
                                 Padding="9,0"
                                 VerticalAlignment="Center">
                             <TextBlock x:Name="ViewerCategoryText"
-                                       Text="Desktop"
+                                       Text="desktop"
                                        FontSize="12"
                                        FontWeight="Medium"
                                        MaxWidth="200"
@@ -1242,8 +1228,8 @@
                                 Orientation="Horizontal"
                                 Spacing="8"
                                 VerticalAlignment="Center">
-                        <Button x:Name="ViewerEditButton"
-                                AutomationProperties.Name="Edit"
+                        <Button FontFamily="Segoe UI" x:Name="ViewerEditButton"
+                                AutomationProperties.Name="edit"
                                 Style="{StaticResource BaseButtonStyle}"
                                 Height="32"
                                 MinHeight="32"
@@ -1260,12 +1246,12 @@
                                       VerticalAlignment="Center"
                                       Data="M 8.5,12.5 L 11.5,15.5 L 21.3,5.7 A 2.1,2.1 0 0 0 18.3,2.7 Z M 9.8,14.2 C 7.2,14.2 6.2,16.2 5.3,17.8 C 4.7,19 3.6,19.7 2.6,20 C 4.8,20.8 7.3,20.7 9.1,19.3 C 10.5,18.2 11.2,16.7 10.8,15.2"/>
                                 <TextBlock x:Name="ViewerEditText"
-                                           Text="Edit"
-                                           FontSize="12.5"
+                                           Text="edit"
+                                           FontSize="13"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="ViewerOpenFolderButton"
+                        <Button FontFamily="Segoe UI" x:Name="ViewerOpenFolderButton"
                                 Style="{StaticResource BaseButtonStyle}"
                                 Height="32"
                                 MinHeight="32"
@@ -1282,13 +1268,13 @@
                                       VerticalAlignment="Center"
                                       Data="M 3,6.5 A 1.5,1.5 0 0 1 4.5,5 H 9.5 L 11.5,7.5 H 19.5 A 1.5,1.5 0 0 1 21,9 V 18 A 1.5,1.5 0 0 1 19.5,19.5 H 4.5 A 1.5,1.5 0 0 1 3,18 Z"/>
                                 <TextBlock x:Name="ViewerFolderText"
-                                           Text="Show in folder"
-                                           FontSize="12.5"
+                                           Text="show in folder"
+                                           FontSize="13"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="ViewerDeleteButton"
-                                AutomationProperties.Name="Delete"
+                        <Button FontFamily="Segoe UI" x:Name="ViewerDeleteButton"
+                                AutomationProperties.Name="delete"
                                 Style="{StaticResource DangerButtonStyle}"
                                 Height="32"
                                 MinHeight="32"
@@ -1305,8 +1291,8 @@
                                       VerticalAlignment="Center"
                                       Data="M 3.5,6 H 20.5 M 8.5,6 V 4 A 1,1 0 0 1 9.5,3 H 14.5 A 1,1 0 0 1 15.5,4 V 6 M 5.5,6 V 19.5 A 1.5,1.5 0 0 0 7,21 H 17 A 1.5,1.5 0 0 0 18.5,19.5 V 6 M 10,10.5 V 16.5 M 14,10.5 V 16.5"/>
                                 <TextBlock x:Name="ViewerDeleteText"
-                                           Text="Delete"
-                                           FontSize="12.5"
+                                           Text="delete"
+                                           FontSize="13"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -1335,8 +1321,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <Button x:Name="EditPlayPauseButton"
-                                    AutomationProperties.Name="Play pause trim preview"
+                            <Button FontFamily="Segoe UI" x:Name="EditPlayPauseButton"
+                                    AutomationProperties.Name="play pause trim preview"
                                     Style="{StaticResource BaseButtonStyle}"
                                     Width="32" Height="30"
                                     Padding="0"
@@ -1457,13 +1443,13 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBlock Text="Crop"
+                                <TextBlock Text="crop"
                                            FontSize="12"
                                            Foreground="{ThemeResource TextTertiaryBrush}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,4,0"/>
-                                <Button x:Name="CropRatioFreeButton"
-                                        Content="Free"
+                                <Button FontFamily="Segoe UI" x:Name="CropRatioFreeButton"
+                                        Content="free"
                                         Tag="free"
                                         Height="28"
                                         MinHeight="28"
@@ -1472,7 +1458,7 @@
                                         FontSize="12"
                                         Style="{StaticResource FilterActiveButtonStyle}"
                                         Click="CropRatioButton_Click"/>
-                                <Button x:Name="CropRatio169Button"
+                                <Button FontFamily="Segoe UI" x:Name="CropRatio169Button"
                                         Content="16:9"
                                         Tag="16:9"
                                         Height="28"
@@ -1482,7 +1468,7 @@
                                         FontSize="12"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Click="CropRatioButton_Click"/>
-                                <Button x:Name="CropRatio43Button"
+                                <Button FontFamily="Segoe UI" x:Name="CropRatio43Button"
                                         Content="4:3"
                                         Tag="4:3"
                                         Height="28"
@@ -1492,7 +1478,7 @@
                                         FontSize="12"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Click="CropRatioButton_Click"/>
-                                <Button x:Name="CropRatio916Button"
+                                <Button FontFamily="Segoe UI" x:Name="CropRatio916Button"
                                         Content="9:16"
                                         Tag="9:16"
                                         Height="28"
@@ -1502,7 +1488,7 @@
                                         FontSize="12"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Click="CropRatioButton_Click"/>
-                                <Button x:Name="CropRatio11Button"
+                                <Button FontFamily="Segoe UI" x:Name="CropRatio11Button"
                                         Content="1:1"
                                         Tag="1:1"
                                         Height="28"
@@ -1533,30 +1519,30 @@
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <TextBlock x:Name="EditExportProgressText"
                                            Visibility="Collapsed"
-                                           Text="Saving 0%"
+                                           Text="saving 0%"
                                            Style="{StaticResource Mono}"
                                            FontSize="12"
                                            Foreground="{ThemeResource TextSecondaryBrush}"
                                            VerticalAlignment="Center"/>
-                                <Button x:Name="EditCancelExportButton"
+                                <Button FontFamily="Segoe UI" x:Name="EditCancelExportButton"
                                         Visibility="Collapsed"
-                                        Content="Cancel"
+                                        Content="cancel"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Height="28"
                                         MinHeight="28"
                                         Padding="12,0"
                                         CornerRadius="4"
                                         Click="EditCancelExportButton_Click"/>
-                                <Button x:Name="EditResetButton"
-                                        Content="Reset"
+                                <Button FontFamily="Segoe UI" x:Name="EditResetButton"
+                                        Content="reset"
                                         Style="{StaticResource BaseButtonStyle}"
                                         Height="28"
                                         MinHeight="28"
                                         Padding="12,0"
                                         CornerRadius="4"
                                         Click="EditResetButton_Click"/>
-                                <Button x:Name="EditSaveCopyButton"
-                                        AutomationProperties.Name="Save as new video"
+                                <Button FontFamily="Segoe UI" x:Name="EditSaveCopyButton"
+                                        AutomationProperties.Name="save as new video"
                                         Style="{StaticResource AccentButtonStyle}"
                                         Height="28"
                                         MinHeight="28"
@@ -1564,7 +1550,7 @@
                                         CornerRadius="4"
                                         Click="EditSaveCopyButton_Click">
                                     <TextBlock x:Name="EditSaveCopyText"
-                                               Text="Save copy"
+                                               Text="save copy"
                                                FontSize="12"
                                                FontWeight="SemiBold"
                                                VerticalAlignment="Center"/>
@@ -1600,10 +1586,9 @@
         <!-- ================================================================ -->
         <!-- TOP FULL-WIDTH HEADER BAR (solid surface, zero blur)             -->
         <!-- ================================================================ -->
-        <Grid x:Name="FloatingHeader"
-              Height="56"
-              VerticalAlignment="Top"
-              Background="Transparent"
+        <Grid x:Name="FloatingHeader" Grid.Row="0"
+              Height="52"
+              Background="{ThemeResource HeaderBarBrush}"
               BorderBrush="{ThemeResource HairlineBrush}"
               BorderThickness="0,0,0,1"
               Padding="16,0,8,0"
@@ -1633,7 +1618,7 @@
                              Fill="{ThemeResource TextTertiaryBrush}"
                              VerticalAlignment="Center"/>
                     <TextBlock x:Name="StatusHeadline"
-                               Text="Stopped"
+                               Text="stopped"
                                FontSize="11.5"
                                FontWeight="Medium"
                                Foreground="{ThemeResource TextSecondaryBrush}"
@@ -1646,23 +1631,18 @@
                     Grid.Column="1"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Height="42"
-                    Padding="0,4">
+                    Height="36" Padding="3"
+                    Background="{ThemeResource NavSelectorTrayBrush}"
+                    BorderBrush="{ThemeResource SurfaceBorderBrush}" BorderThickness="1" CornerRadius="10">
                 <Grid>
-                    <!-- Smooth horizontal Composition pill -->
-                    <Border x:Name="NavActivePill"
-                            Width="22"
-                            Height="3"
-                            CornerRadius="2"
-                            Margin="35,0,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Bottom"
-                            Background="{ThemeResource AccentIndicatorBrush}"
-                            IsHitTestVisible="False"/>
+                    <Border x:Name="NavActivePill" Width="92" Height="28" CornerRadius="4"
+                            HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"
+                            Background="{ThemeResource NavActivePillBrush}"
+                            BorderBrush="{ThemeResource NavActivePillBorderBrush}" BorderThickness="1"/>
 
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Button x:Name="NavHomeButton"
-                                AutomationProperties.Name="Home"
+                        <Button FontFamily="Segoe UI" x:Name="NavHomeButton"
+                                AutomationProperties.Name="home"
                                 Width="92"
                                 Style="{StaticResource NavRailButtonStyle}"
                                 Click="NavHomeButton_Click">
@@ -1677,14 +1657,14 @@
                                       VerticalAlignment="Center"
                                       Data="M 3,10.5 L 12,3 L 21,10.5 V 19.5 A 1.5,1.5 0 0 1 19.5,21 H 15 V 14.5 H 9 V 21 H 4.5 A 1.5,1.5 0 0 1 3,19.5 Z"/>
                                 <TextBlock x:Name="NavHomeText"
-                                           Text="Home"
-                                           FontSize="12.5"
+                                           Text="home"
+                                           FontSize="13"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
-                        <Button x:Name="NavSettingsButton"
-                                AutomationProperties.Name="Settings"
+                        <Button FontFamily="Segoe UI" x:Name="NavSettingsButton"
+                                AutomationProperties.Name="settings"
                                 Width="92"
                                 Style="{StaticResource NavRailButtonStyle}"
                                 Click="NavSettingsButton_Click">
@@ -1699,8 +1679,8 @@
                                       VerticalAlignment="Center"
                                       Data="M 19.4,15 A 1.65,1.65 0 0 0 19.73,16.82 L 19.79,16.88 A 2,2 0 1 1 16.96,19.71 L 16.9,19.65 A 1.65,1.65 0 0 0 15.08,19.32 A 1.65,1.65 0 0 0 14,20.85 V 21 A 2,2 0 1 1 10,21 V 20.91 A 1.65,1.65 0 0 0 8.92,19.4 A 1.65,1.65 0 0 0 7.1,19.73 L 7.04,19.79 A 2,2 0 1 1 4.21,16.96 L 4.27,16.9 A 1.65,1.65 0 0 0 4.6,15.08 A 1.65,1.65 0 0 0 3.15,14 H 3 A 2,2 0 1 1 3,10 H 3.09 A 1.65,1.65 0 0 0 4.6,8.92 A 1.65,1.65 0 0 0 4.27,7.1 L 4.21,7.04 A 2,2 0 1 1 7.04,4.21 L 7.1,4.27 A 1.65,1.65 0 0 0 8.92,4.6 H 9 A 1.65,1.65 0 0 0 10,3.09 V 3 A 2,2 0 1 1 14,3 V 3.09 A 1.65,1.65 0 0 0 15.08,4.6 A 1.65,1.65 0 0 0 16.9,4.27 L 16.96,4.21 A 2,2 0 1 1 19.79,7.04 L 19.73,7.1 A 1.65,1.65 0 0 0 19.4,8.92 V 9 A 1.65,1.65 0 0 0 20.91,10 H 21 A 2,2 0 1 1 21,14 H 20.91 A 1.65,1.65 0 0 0 19.4,15 Z M 15,12 A 3,3 0 1 1 9,12 A 3,3 0 1 1 15,12 Z"/>
                                 <TextBlock x:Name="NavSettingsText"
-                                           Text="Settings"
-                                           FontSize="12.5"
+                                           Text="settings"
+                                           FontSize="13"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -1715,26 +1695,26 @@
                         Spacing="4"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <Button x:Name="MinimizeTitleButton"
-                        AutomationProperties.Name="Minimize"
+                <Button FontFamily="Segoe UI" x:Name="MinimizeTitleButton"
+                        AutomationProperties.Name="minimize"
                         Style="{StaticResource TitleBarIconButtonStyle}"
                         local:UiHover.HoverIconTone="Primary"
                         IsTabStop="False"
                         Click="MinimizeTitleButton_Click"
-                        ToolTipService.ToolTip="Minimize">
+                        ToolTipService.ToolTip="minimize">
                     <Path Width="10" Height="2"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"
                           Fill="{ThemeResource TextSecondaryBrush}"
                           Data="M 0,0.4 H 10 V 1.6 H 0 Z"/>
                 </Button>
-                <Button x:Name="CloseTitleButton"
-                        AutomationProperties.Name="Hide to tray"
+                <Button FontFamily="Segoe UI" x:Name="CloseTitleButton"
+                        AutomationProperties.Name="hide to tray"
                         Style="{StaticResource TitleBarCloseButtonStyle}"
                         local:UiHover.HoverIconTone="White"
                         IsTabStop="False"
                         Click="CloseTitleButton_Click"
-                        ToolTipService.ToolTip="Hide to tray">
+                        ToolTipService.ToolTip="hide to tray">
                     <Path Width="10" Height="10"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"
@@ -1748,18 +1728,18 @@
         </Grid>
 
         <!-- ORDERED BOTTOM NOTIFICATION STACK (never overlaps) -->
-        <StackPanel x:Name="BottomToastStack"
+        <StackPanel x:Name="BottomToastStack" Grid.Row="2"
                     Canvas.ZIndex="30"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
-                    Margin="24,0,24,16"
-                    Spacing="8">
+                    MaxWidth="640"
+                    Spacing="0">
 
             <!-- STATUS INFOBAR -->
-            <InfoBar x:Name="StatusInfoBar"
+            <InfoBar FontFamily="Segoe UI" x:Name="StatusInfoBar"
                      Background="{ThemeResource FloatingSurfaceBrush}"
                      BorderBrush="{ThemeResource ControlElevationBorderBrush}"
-                     CornerRadius="8"
+                     CornerRadius="8" Margin="16,0,16,10"
                      Visibility="Collapsed"
                      HorizontalAlignment="Center"
                      MaxWidth="560"
@@ -1769,20 +1749,20 @@
                      Closed="StatusInfoBar_Closed"/>
 
             <!-- WEBVIEW2 RUNTIME WARNING -->
-            <InfoBar x:Name="WebViewRequirementBar"
+            <InfoBar FontFamily="Segoe UI" x:Name="WebViewRequirementBar"
                      Background="{ThemeResource FloatingSurfaceBrush}"
                      BorderBrush="{ThemeResource ControlElevationBorderBrush}"
-                     CornerRadius="8"
+                     CornerRadius="8" Margin="16,0,16,10"
                      Visibility="Collapsed"
                      HorizontalAlignment="Center"
                      MaxWidth="560"
                      IsOpen="False"
                      IsClosable="False"
                      Severity="Warning"
-                     Title="WebView2 Runtime required"
-                     Message="Video playback requires the Microsoft Edge WebView2 Runtime.">
+                     Title="webview2 runtime required"
+                     Message="video playback requires the microsoft edge webview2 runtime.">
                 <InfoBar.ActionButton>
-                    <Button Content="Download webview2" Click="DownloadWebView2Button_Click"/>
+                    <Button FontFamily="Segoe UI" Content="download webview2" Click="DownloadWebView2Button_Click"/>
                 </InfoBar.ActionButton>
             </InfoBar>
 
@@ -1792,43 +1772,39 @@
                     BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    MinHeight="48"
+                    MinHeight="48" Margin="16,0,16,10"
                     HorizontalAlignment="Center"
-                    Visibility="Collapsed"
-                    Opacity="0">
-                <Border.RenderTransform>
-                    <TranslateTransform x:Name="PendingFlyoutSlide" Y="12"/>
-                </Border.RenderTransform>
+                    Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal" Spacing="8" Padding="16,0,8,0" VerticalAlignment="Center">
                     <Ellipse Width="8" Height="8" Fill="{ThemeResource AccentIndicatorBrush}"/>
-                    <TextBlock Text="Unsaved changes"
-                               FontSize="12.5"
+                    <TextBlock Text="unsaved changes"
+                               FontSize="13"
                                FontWeight="Medium"
                                Foreground="{ThemeResource TextPrimaryBrush}"
                                VerticalAlignment="Center"
                                Margin="0,0,4,0"/>
-                    <Button x:Name="PendingDiscardButton"
+                    <Button FontFamily="Segoe UI" x:Name="PendingDiscardButton"
                             Style="{StaticResource BaseButtonStyle}"
                             Height="28"
                             MinHeight="28"
                             CornerRadius="4"
                             Padding="12,0"
-                            Content="Discard"
+                            Content="discard"
                             Click="PendingDiscardButton_Click"/>
-                    <Button x:Name="PendingSaveButton"
+                    <Button FontFamily="Segoe UI" x:Name="PendingSaveButton"
                             Style="{StaticResource AccentButtonStyle}"
                             Height="28"
                             MinHeight="28"
                             CornerRadius="4"
                             Padding="16,0"
-                            Content="Save"
+                            Content="save"
                             Click="PendingSaveButton_Click"/>
                 </StackPanel>
             </Border>
         </StackPanel>
 
         <!-- Crisp 1px perimeter border framing the Acrylic window -->
-        <Border IsHitTestVisible="False"
+        <Border IsHitTestVisible="False" Grid.RowSpan="3"
                 BorderBrush="{ThemeResource WindowRimBorderBrush}"
                 BorderThickness="1"
                 Canvas.ZIndex="40"/>

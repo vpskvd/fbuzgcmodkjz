@@ -10,6 +10,8 @@
                 <ResourceDictionary Source="Themes/Theme.xaml"/>
                 <ResourceDictionary Source="Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <FontFamily x:Key="ContentControlThemeFontFamily">Segoe UI</FontFamily>
+            <FontFamily x:Key="ControlContentThemeFontFamily">Segoe UI</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

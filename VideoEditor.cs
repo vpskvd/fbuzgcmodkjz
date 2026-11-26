@@ -56,10 +56,10 @@ public static class VideoEditor
         CancellationToken ct = default)
     {
         if (!File.Exists(request.SourcePath))
-            throw new FileNotFoundException("source video file was not found.", request.SourcePath);
+            throw new FileNotFoundException("Source video file was not found.", request.SourcePath);
 
         string outputDir = Path.GetDirectoryName(request.OutputPath)
-            ?? throw new InvalidOperationException("invalid output directory.");
+            ?? throw new InvalidOperationException("Invalid output directory.");
         Directory.CreateDirectory(outputDir);
 
         string tempPath = Path.Combine(
@@ -146,11 +146,11 @@ public static class VideoEditor
         int srcW = (int)srcProps.Width;
         int srcH = (int)srcProps.Height;
         if (srcW <= 0 || srcH <= 0)
-            throw new InvalidOperationException("could not read source video dimensions.");
+            throw new InvalidOperationException("Could not read source video dimensions.");
 
         double totalSec = probeClip.OriginalDuration.TotalSeconds;
         if (totalSec <= 0.1)
-            throw new InvalidOperationException("video clip is too short to edit.");
+            throw new InvalidOperationException("Video clip is too short to edit.");
 
         double startSec = Math.Clamp(request.TrimStartSeconds, 0.0, Math.Max(0.0, totalSec - 0.15));
         double endSec = Math.Clamp(request.TrimEndSeconds, startSec + 0.15, totalSec);
@@ -238,7 +238,7 @@ public static class VideoEditor
 
         PrepareTranscodeResult prepared = await transcoder.PrepareFileTranscodeAsync(srcFile, tempFile, profile).AsTask(ct);
         if (!prepared.CanTranscode)
-            throw new InvalidOperationException($"export unsupported ({prepared.FailureReason}).");
+            throw new InvalidOperationException($"Export unsupported ({prepared.FailureReason}).");
 
         var transcodeOp = prepared.TranscodeAsync();
         transcodeOp.Progress = (_, pct) => progress?.Report(Math.Clamp(pct, 0.0, 96.0));

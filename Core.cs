@@ -326,13 +326,13 @@ public readonly struct SaveReplayResult
 
     public string UserMessage() => Outcome switch
     {
-        SaveReplayOutcome.Success => $"replay saved to {Category}",
-        SaveReplayOutcome.NotRecording => "recorder isn't running — start replay first.",
-        SaveReplayOutcome.NoSegments => "still buffering — try again in a few seconds.",
+        SaveReplayOutcome.Success => $"Replay saved to {ReplayItem.FormatCategory(Category)}",
+        SaveReplayOutcome.NotRecording => "Recorder isn't running — start replay first.",
+        SaveReplayOutcome.NoSegments => "Still buffering — try again in a few seconds.",
         SaveReplayOutcome.WriteBlocked => "Windows denied access to the replay folder.",
-        SaveReplayOutcome.MergeFailed => "failed to save replay (see debug log for details).",
-        SaveReplayOutcome.LowMemory => "replay save skipped: windows is low on committed memory.",
-        _ => "failed to save replay (see debug log for details).",
+        SaveReplayOutcome.MergeFailed => "Failed to save replay (see debug log for details).",
+        SaveReplayOutcome.LowMemory => "Replay save skipped: Windows is low on committed memory.",
+        _ => "Failed to save replay (see debug log for details).",
     };
 }
 
@@ -372,7 +372,7 @@ public sealed class RecorderEngine : IDisposable
 
     public bool IsPaused { get { lock (_opLock) return _armed && _specific && _paused; } }
     public string TargetState { get { lock (_opLock) return _targetState; } }
-    public string ActiveGameName { get { lock (_opLock) return _specific ? (_target?.Game.ToLowerInvariant() ?? "") : ""; } }
+    public string ActiveGameName { get { lock (_opLock) return _specific ? (_target?.Game ?? "") : ""; } }
 
     private readonly object _lock = new();
     private readonly object _opLock = new();

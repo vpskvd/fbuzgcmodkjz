@@ -16,7 +16,7 @@ namespace InstantReplay;
 
 public sealed record CategoryFilter(string Name, int Count)
 {
-    public string Label => Count > 0 ? $"{Name}  {Count}" : Name;
+    public string Label => Count > 0 ? $"{ReplayItem.FormatCategory(Name)}  {Count}" : ReplayItem.FormatCategory(Name);
 }
 
 public sealed class ReplayItem : INotifyPropertyChanged
@@ -145,7 +145,7 @@ public sealed class ReplayItem : INotifyPropertyChanged
 
     public bool IsEdited => Path.GetFileNameWithoutExtension(VideoPath).Contains("_cut", StringComparison.OrdinalIgnoreCase);
 
-    public string CardTitleText => IsEdited ? $"{DateText} · edit" : DateText;
+    public string CardTitleText => IsEdited ? $"{DateText} · edited" : DateText;
 
     public string ResolutionText => VideoWidth > 0 && VideoHeight > 0
         ? $"{VideoWidth}×{VideoHeight}"
@@ -155,11 +155,16 @@ public sealed class ReplayItem : INotifyPropertyChanged
         ? $"{DateText} · {VideoHeight}p"
         : DateText;
 
+    public static string FormatCategory(string category)
+    {
+        string display = category.Trim().ToLowerInvariant();
+        return string.IsNullOrWhiteSpace(display) ? "desktop" : display;
+    }
+
     private static string FormatBadgeCategory(string category)
     {
-        if (string.IsNullOrWhiteSpace(category)) return "desktop";
+        if (string.IsNullOrWhiteSpace(category)) return "Desktop";
         string c = category.Trim().ToLowerInvariant();
-        if (c.Length <= 16) return c;
         return c switch
         {
             "counter-strike global offensive" or "counter-strike: global offensive" => "cs:go",
@@ -174,7 +179,7 @@ public sealed class ReplayItem : INotifyPropertyChanged
             "world of warcraft" => "wow",
             "call of duty modern warfare" => "cod mw",
             "dead by daylight" => "dbd",
-            _ => c
+            _ => FormatCategory(category)
         };
     }
 

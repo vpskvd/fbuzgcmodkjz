@@ -148,7 +148,7 @@ public static class AppUpdater
             using (var check = File.OpenRead(destPath))
             {
                 if (check.ReadByte() != 'M' || check.ReadByte() != 'Z')
-                    throw new InvalidOperationException("downloaded file is not a valid windows executable.");
+                    throw new InvalidOperationException("The downloaded file is not a valid Windows executable.");
             }
 
             progress?.Report(100);
