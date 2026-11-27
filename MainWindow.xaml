@@ -14,7 +14,7 @@
 
         <Grid x:Name="PagesHost" Grid.Row="1">
 
-            <!-- PAGE 1: HOME (Hero -> Compact Telemetry -> Gallery) -->
+            <!-- PAGE 1: HOME (Hero -> Gallery) -->
             <ScrollViewer x:Name="HomePage"
                           Style="{StaticResource PageScrollViewerStyle}"
                           Foreground="{ThemeResource TextPrimaryBrush}"
@@ -119,134 +119,7 @@
                                     IsHitTestVisible="False"/>
                         </Grid>
 
-                        <!-- 2. COMPACT SYSTEM TELEMETRY -->
-                        <Grid x:Name="TelemetryRow" ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- CPU Usage Card -->
-                            <Border x:Name="CpuCard"
-                                    Grid.Column="0"
-                                    Background="{ThemeResource CardSecondaryBrush}"
-                                    BorderBrush="{ThemeResource SurfaceBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Padding="14,10">
-                                <Grid RowSpacing="8">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Grid ColumnSpacing="10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <TextBlock Text="cpu usage"
-                                                   Style="{StaticResource ToolbarLabel}" FontWeight="Medium"
-                                                   Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                        <TextBlock x:Name="CpuHintText" Grid.Row="1"
-                                                   Text="overall processor load"
-                                                   FontSize="11"
-                                                   Foreground="{ThemeResource TextTertiaryBrush}"
-                                                   TextTrimming="CharacterEllipsis"/>
-
-                                        <TextBlock x:Name="CpuValueText"
-                                                   Grid.Column="1"
-                                                   Text="—"
-                                                   Style="{StaticResource ToolbarLabel}"
-                                                   FontWeight="SemiBold"
-                                                   Typography.NumeralAlignment="Tabular"
-                                                   Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                    </Grid>
-
-                                    <Border Grid.Row="1"
-                                            Height="3"
-                                            CornerRadius="1.5"
-                                            Background="{ThemeResource TrackBrush}">
-                                        <Border x:Name="CpuBarFill"
-                                                Height="3"
-                                                CornerRadius="1.5"
-                                                Background="{ThemeResource AccentIndicatorBrush}"
-                                                RenderTransformOrigin="0,0.5">
-                                            <Border.RenderTransform>
-                                                <ScaleTransform x:Name="CpuBarScale" ScaleX="0" ScaleY="1"/>
-                                            </Border.RenderTransform>
-                                        </Border>
-                                    </Border>
-                                </Grid>
-                            </Border>
-
-                            <!-- System Memory Card -->
-                            <Border x:Name="RamCard"
-                                    Grid.Column="1"
-                                    Background="{ThemeResource CardSecondaryBrush}"
-                                    BorderBrush="{ThemeResource SurfaceBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Padding="14,10">
-                                <Grid RowSpacing="8">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Grid ColumnSpacing="10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <TextBlock Text="system memory"
-                                                   Style="{StaticResource ToolbarLabel}" FontWeight="Medium"
-                                                   Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                        <TextBlock x:Name="RamHintText" Grid.Row="1"
-                                                   Text="in use"
-                                                   FontSize="11"
-                                                   Typography.NumeralAlignment="Tabular"
-                                                   Foreground="{ThemeResource TextTertiaryBrush}"
-                                                   TextTrimming="CharacterEllipsis"/>
-
-                                        <TextBlock x:Name="RamValueText"
-                                                   Grid.Column="1"
-                                                   Text="—"
-                                                   Style="{StaticResource ToolbarLabel}"
-                                                   FontWeight="SemiBold"
-                                                   Typography.NumeralAlignment="Tabular"
-                                                   Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                    </Grid>
-
-                                    <Border Grid.Row="1"
-                                            Height="3"
-                                            CornerRadius="1.5"
-                                            Background="{ThemeResource TrackBrush}">
-                                        <Border x:Name="RamBarFill"
-                                                Height="3"
-                                                CornerRadius="1.5"
-                                                Background="{ThemeResource AccentIndicatorBrush}"
-                                                RenderTransformOrigin="0,0.5">
-                                            <Border.RenderTransform>
-                                                <ScaleTransform x:Name="RamBarScale" ScaleX="0" ScaleY="1"/>
-                                            </Border.RenderTransform>
-                                        </Border>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </Grid>
-
-                        <!-- 3. GALLERY SECTION -->
+                        <!-- 2. GALLERY SECTION -->
                         <StackPanel x:Name="GallerySection" Spacing="12">
 
                             <Grid>
@@ -423,7 +296,7 @@
                                                                   StrokeStartLineCap="Round"
                                                                   StrokeEndLineCap="Round"
                                                                   VerticalAlignment="Center"
-                                                                  Data="M 2,4 Q 2,3 3,3 H 6.5 L 8,4.5 H 13 Q 14,4.5 14,5.5 V 12 Q 14,13 13,13 H 3 Q 2,13 2,12 Z"/>
+                                                                  Data="M 2,4.5 Q 2,3.5 3,3.5 H 6.5 L 8,5 H 13 Q 14,5 14,6 V 12.5 Q 14,13.5 13,13.5 H 3 Q 2,13.5 2,12.5 Z"/>
                                                         </Button>
                                                         <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
                                                                 AutomationProperties.Name="delete clip"
@@ -1404,7 +1277,7 @@
                     Background="{ThemeResource NavSelectorTrayBrush}"
                     BorderBrush="{ThemeResource SurfaceBorderBrush}" BorderThickness="1" CornerRadius="10">
                 <Grid>
-                    <Border x:Name="NavActivePill" Width="92" Height="28" CornerRadius="4"
+                    <Border x:Name="NavActivePill" Width="92" Height="28" CornerRadius="6"
                             HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"
                             Background="{ThemeResource NavActivePillBrush}"
                             BorderBrush="{ThemeResource NavActivePillBorderBrush}" BorderThickness="1"/>
@@ -1460,14 +1333,14 @@
                         IsTabStop="False"
                         Click="CloseTitleButton_Click"
                         ToolTipService.ToolTip="hide to tray">
-                    <Path Width="10" Height="10"
+                    <Path Width="12" Height="12" Stretch="None"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"
                           Stroke="{ThemeResource TextSecondaryBrush}"
-                          StrokeThickness="1.25"
+                          StrokeThickness="1.5"
                           StrokeStartLineCap="Round"
                           StrokeEndLineCap="Round"
-                          Data="M 1,1 L 9,9 M 9,1 L 1,9"/>
+                          Data="M 2.5,2.5 L 9.5,9.5 M 9.5,2.5 L 2.5,9.5"/>
                 </Button>
             </StackPanel>
         </Grid>
@@ -1492,7 +1365,12 @@
                      IsIconVisible="False"
                      IsClosable="True"
                      Severity="Informational"
-                     Closed="StatusInfoBar_Closed"/>
+                     Closing="StatusInfoBar_Closing"
+                     Closed="StatusInfoBar_Closed">
+                <InfoBar.RenderTransform>
+                    <TranslateTransform x:Name="StatusInfoOffset"/>
+                </InfoBar.RenderTransform>
+            </InfoBar>
 
             <!-- WEBVIEW2 RUNTIME WARNING -->
             <InfoBar FontFamily="Segoe UI" x:Name="WebViewRequirementBar"

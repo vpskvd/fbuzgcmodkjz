@@ -514,6 +514,12 @@ body.editing .close-btn {
   overflow: hidden;
   touch-action: none;
   user-select: none;
+  animation: cropEnter 160ms var(--motion-ease) both;
+}
+
+@keyframes cropEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 #cropLayer[hidden] {
@@ -523,46 +529,23 @@ body.editing .close-btn {
 #cropBox {
   position: absolute;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.58);
+  border: 1px solid rgba(224, 231, 244, 0.78);
+  border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(11, 13, 18, 0.62), inset 0 0 0 1px rgba(11, 13, 18, 0.42);
   cursor: move;
   touch-action: none;
 }
 
-.crop-grid-v,
-.crop-grid-h {
-  position: absolute;
-  pointer-events: none;
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.crop-grid-v {
-  top: 0;
-  bottom: 0;
-  width: 1px;
-}
-
-.crop-grid-v.g1 { left: 33.3333%; }
-.crop-grid-v.g2 { left: 66.6667%; }
-
-.crop-grid-h {
-  left: 0;
-  right: 0;
-  height: 1px;
-}
-
-.crop-grid-h.g1 { top: 33.3333%; }
-.crop-grid-h.g2 { top: 66.6667%; }
-
 #cropTag {
   position: absolute;
   top: 10px;
-  left: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(16, 18, 22, 0.86);
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--bar-surface);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #f2f4f8;
   font-size: 11px;
@@ -570,7 +553,7 @@ body.editing .close-btn {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
-  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .crop-handle {
@@ -584,8 +567,13 @@ body.editing .close-btn {
   position: absolute;
   box-sizing: border-box;
   pointer-events: none;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.82));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.72));
+  opacity: 0.8;
+  transition: opacity var(--motion-press) var(--motion-ease);
 }
+
+.crop-handle:hover::before,
+.crop-handle:active::before { opacity: 1; }
 
 .h-nw, .h-ne, .h-se, .h-sw {
   width: 22px;
@@ -595,33 +583,33 @@ body.editing .close-btn {
 .h-nw { left: -1px; top: -1px; cursor: nwse-resize; }
 .h-nw::before {
   left: 0; top: 0; width: 14px; height: 14px;
-  border-top: 3px solid #ffffff;
-  border-left: 3px solid #ffffff;
-  border-top-left-radius: 2px;
+  border-top: 2px solid #f2f4f8;
+  border-left: 2px solid #f2f4f8;
+  border-top-left-radius: 4px;
 }
 
 .h-ne { right: -1px; top: -1px; cursor: nesw-resize; }
 .h-ne::before {
   right: 0; top: 0; width: 14px; height: 14px;
-  border-top: 3px solid #ffffff;
-  border-right: 3px solid #ffffff;
-  border-top-right-radius: 2px;
+  border-top: 2px solid #f2f4f8;
+  border-right: 2px solid #f2f4f8;
+  border-top-right-radius: 4px;
 }
 
 .h-se { right: -1px; bottom: -1px; cursor: nwse-resize; }
 .h-se::before {
   right: 0; bottom: 0; width: 14px; height: 14px;
-  border-bottom: 3px solid #ffffff;
-  border-right: 3px solid #ffffff;
-  border-bottom-right-radius: 2px;
+  border-bottom: 2px solid #f2f4f8;
+  border-right: 2px solid #f2f4f8;
+  border-bottom-right-radius: 4px;
 }
 
 .h-sw { left: -1px; bottom: -1px; cursor: nesw-resize; }
 .h-sw::before {
   left: 0; bottom: 0; width: 14px; height: 14px;
-  border-bottom: 3px solid #ffffff;
-  border-left: 3px solid #ffffff;
-  border-bottom-left-radius: 2px;
+  border-bottom: 2px solid #f2f4f8;
+  border-left: 2px solid #f2f4f8;
+  border-bottom-left-radius: 4px;
 }
 
 .h-n, .h-s {

@@ -33,23 +33,6 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int vKey);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterWindowMessage(string lpString);
-    [DllImport("kernel32.dll")] private static extern bool GetSystemTimes(out FILETIME lpIdleTime, out FILETIME lpKernelTime, out FILETIME lpUserTime);
-    [DllImport("kernel32.dll")] private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct FILETIME
-    {
-        public uint dwLowDateTime, dwHighDateTime;
-        public ulong Ticks => ((ulong)dwHighDateTime << 32) | dwLowDateTime;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MEMORYSTATUSEX
-    {
-        public uint dwLength, dwMemoryLoad;
-        public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile, ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
-    }
-
     private static readonly uint s_taskbarButtonCreated = RegisterWindowMessage("TaskbarButtonCreated");
     private const int SwMinimize = 6;
     private const int GwlpWndProc = -4;
@@ -86,9 +69,6 @@ public partial class MainWindow : Window
     private DispatcherTimer? _micMeterTimer;
     private bool _micProbeInFlight;
     private DispatcherTimer? _deviceChangeDebounceTimer;
-    private DispatcherTimer? _statsTimer;
-    private ulong _lastIdleTicks, _lastKernelTicks, _lastUserTicks;
-    private bool _statsBaselineTaken;
     private AudioDeviceWatcher? _audioWatcher;
     private Vector3 _navPillPosition;
     private bool _homeEntrancePlayed;
@@ -110,6 +90,8 @@ public partial class MainWindow : Window
 
     private ReplayLibrary _library = null!;
     private DispatcherTimer? _infoBarTimer;
+    private Storyboard? _infoBarMotion;
+    private bool _galleryChangingFilter;
     private ReplayItem? _viewerItem;
     private bool _galleryRefreshing;
     private bool _galleryRefreshAgain;
@@ -172,7 +154,7 @@ public partial class MainWindow : Window
 
     private string? _lastSavedReplayPath;
     private FrameworkElement _currentPage;
-    private bool _isSettingsActive;
+    private bool IsSettingsActive => ReferenceEquals(_currentPage, SettingsPage);
 
     private TaskbarBadge? _taskbarBadge;
     private BadgeKind _badgeKind = BadgeKind.None;
@@ -245,7 +227,10 @@ public partial class MainWindow : Window
 
         GalleryGrid.ItemsSource = _library.Items;
         GalleryGrid.ContainerContentChanging += GalleryGrid_ContainerContentChanging;
-        _library.Items.CollectionChanged += (_, _) => UpdateGalleryChrome();
+        _library.Items.CollectionChanged += (_, _) =>
+        {
+            if (!_galleryChangingFilter && !_galleryRefreshing) UpdateGalleryChrome();
+        };
         _library.FolderChanged += () => _ = RefreshGalleryAsync();
 
         if (!RegisterHotkeyInternal(_settings.HotkeyModifiers, _settings.HotkeyVk))
@@ -277,21 +262,12 @@ public partial class MainWindow : Window
         };
         if (!_startMinimized) _bufferHealthTimer.Start();
 
-        _statsTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
-        _statsTimer.Tick += (_, _) => { if (!_isHidden) UpdateSystemStats(); };
-        if (!_startMinimized)
-        {
-            _statsTimer.Start();
-            UpdateSystemStats();
-            _ = Task.Delay(300).ContinueWith(_ => _dq.TryEnqueue(UpdateSystemStats));
-        }
-
         _micRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
         _micRefreshTimer.Tick += (_, _) => { if (!_isHidden) RefreshMicrophonesInBackground(); };
         if (!_startMinimized) _micRefreshTimer.Start();
 
         _micMeterTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(220) };
-        _micMeterTimer.Tick += (_, _) => { if (!_isHidden && _isSettingsActive) UpdateMicLiveStatus(); };
+        _micMeterTimer.Tick += (_, _) => { if (!_isHidden && IsSettingsActive) UpdateMicLiveStatus(); };
         if (!_startMinimized) _micMeterTimer.Start();
 
         _deviceChangeDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
@@ -538,7 +514,6 @@ public partial class MainWindow : Window
         if (_inlinePageReady) SendAccentInline();
         UpdateNavPillVisual(animate: false);
         RebuildCategoryFilterPills();
-        UpdateSystemStats();
         SetRunningVisual(_engine.IsRunning);
     }
 
@@ -620,21 +595,18 @@ public partial class MainWindow : Window
 
     private void NavSettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ReferenceEquals(_currentPage, ViewerPage))
-            StopViewerPlayback();
         SwitchToPage(settingsPage: true);
     }
 
     private void SwitchToPage(bool settingsPage)
     {
-        if (_isSettingsActive == settingsPage && !ReferenceEquals(_currentPage, ViewerPage))
-            return;
+        var target = settingsPage ? (FrameworkElement)SettingsPage : HomePage;
+        if (ReferenceEquals(_currentPage, target)) return;
+
+        NavigateTo(target);
 
         if (_dirty && !settingsPage)
             RevertPendingChanges();
-
-        _isSettingsActive = settingsPage;
-        UpdateNavPillVisual(animate: true);
 
         if (settingsPage)
         {
@@ -643,14 +615,13 @@ public partial class MainWindow : Window
             RefreshAudioAppsInBackground();
         }
 
-        var target = settingsPage ? (FrameworkElement)SettingsPage : HomePage;
-        NavigateTo(target);
-        if (!settingsPage) _ = RefreshGalleryAsync();
+        if (!settingsPage)
+            _dq.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => _ = RefreshGalleryAsync());
     }
 
     private void UpdateNavPillVisual(bool animate)
     {
-        Vector3 target = new(_isSettingsActive ? 96 : 0, 0, 0);
+        Vector3 target = new(IsSettingsActive ? 96 : 0, 0, 0);
         Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(NavActivePill, true);
         var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(NavActivePill);
         if (animate && _uiSettings.AnimationsEnabled && target != _navPillPosition)
@@ -669,11 +640,11 @@ public partial class MainWindow : Window
         _navPillPosition = target;
         var primary = GetThemedBrush("TextPrimaryBrush");
         var secondary = GetThemedBrush("TextSecondaryBrush");
-        NavHomeButton.Foreground = _isSettingsActive ? secondary : primary;
-        NavSettingsButton.Foreground = _isSettingsActive ? primary : secondary;
+        NavHomeButton.Foreground = IsSettingsActive ? secondary : primary;
+        NavSettingsButton.Foreground = IsSettingsActive ? primary : secondary;
     }
 
-    private void FadeIn(FrameworkElement element, float from = 0.8f, float offset = 0)
+    private void FadeIn(FrameworkElement element, float from = 0.8f, float offset = 0, float offsetX = 0, int duration = 200)
     {
         Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(element, true);
         var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(element);
@@ -690,16 +661,16 @@ public partial class MainWindow : Window
         var fade = compositor.CreateScalarKeyFrameAnimation();
         fade.InsertKeyFrame(0, from);
         fade.InsertKeyFrame(1, 1, easing);
-        fade.Duration = TimeSpan.FromMilliseconds(240);
+        fade.Duration = TimeSpan.FromMilliseconds(duration);
         visual.StartAnimation("Opacity", fade);
-        if (offset == 0)
+        if (offset == 0 && offsetX == 0)
         {
             visual.StopAnimation("Translation");
             visual.Properties.InsertVector3("Translation", Vector3.Zero);
             return;
         }
         var slide = compositor.CreateVector3KeyFrameAnimation();
-        slide.InsertKeyFrame(0, new Vector3(0, offset, 0));
+        slide.InsertKeyFrame(0, new Vector3(offsetX, offset, 0));
         slide.InsertKeyFrame(1, Vector3.Zero, easing);
         slide.Duration = fade.Duration;
         visual.StartAnimation("Translation", slide);
@@ -710,13 +681,21 @@ public partial class MainWindow : Window
         if (ReferenceEquals(newPage, _currentPage)) return;
         var oldPage = _currentPage;
         _currentPage = newPage;
+        UpdateNavPillVisual(animate: true);
         UpdateHeroOrnament();
-        if (ReferenceEquals(oldPage, ViewerPage)) StopViewerPlayback();
+        if (ReferenceEquals(oldPage, ViewerPage))
+        {
+            StopViewerPlayback();
+            _viewerItem = null;
+        }
         oldPage.Visibility = Visibility.Collapsed;
         newPage.Visibility = Visibility.Visible;
-        if (!fadeOnly && newPage is ScrollViewer scroll) scroll.ChangeView(0, 0, null, disableAnimation: true);
+        if (!fadeOnly && newPage is ScrollViewer scroll && scroll.VerticalOffset > 0)
+            scroll.ChangeView(null, 0, null, disableAnimation: true);
+
+        bool switchingTabs = !fadeOnly && oldPage != ViewerPage && newPage != ViewerPage;
         // Keep WebView2 stationary while its own content becomes ready.
-        FadeIn(newPage, offset: fadeOnly || ReferenceEquals(newPage, ViewerPage) ? 0 : 5);
+        FadeIn(newPage, from: 0.92f, offsetX: switchingTabs ? (IsSettingsActive ? 8 : -8) : 0, duration: 175);
     }
 
     private void Notify(string title, string message, int balloonIcon)
@@ -736,7 +715,7 @@ public partial class MainWindow : Window
     private void CloseButton_Click()
     {
         if (_isVideoFullscreen) ExitVideoFullscreen();
-        if (!_isExportingVideo && _viewerItem != null)
+        if (!_isExportingVideo && ReferenceEquals(_currentPage, ViewerPage))
         {
             StopViewerPlayback(destroy: true);
             NavigateTo(HomePage, fadeOnly: true);
@@ -750,7 +729,6 @@ public partial class MainWindow : Window
         _isHidden = true;
         UpdateHeroOrnament();
         _bufferHealthTimer?.Stop();
-        _statsTimer?.Stop();
         _micMeterTimer?.Stop();
         _micRefreshTimer?.Stop();
         _taskbarBadge?.SetTaskbarVisible(false);
@@ -887,12 +865,11 @@ public partial class MainWindow : Window
     private void ShowFromTray()
     {
         _isHidden = false;
+        UpdateNavPillVisual(animate: false);
         UpdateHeroOrnament();
         _bufferHealthTimer?.Start();
-        _statsTimer?.Start();
         _micRefreshTimer?.Start();
         _micMeterTimer?.Start();
-        UpdateSystemStats();
         try { _appWindow.Show(); } catch { }
         ShowWindow(_hwnd, SwShow);
         if (_appWindow.Presenter is OverlappedPresenter presenter && presenter.State == OverlappedPresenterState.Minimized)
@@ -1227,9 +1204,12 @@ public partial class MainWindow : Window
     private void SwitchGalleryFilter(string filterName)
     {
         if (string.Equals(filterName, _library.ActiveFilter, StringComparison.OrdinalIgnoreCase)) return;
-        _library.SetFilter(filterName);
+        _galleryChangingFilter = true;
+        try { _library.SetFilter(filterName); }
+        finally { _galleryChangingFilter = false; }
         UpdateGalleryChrome();
-        if (GalleryGrid.Visibility == Visibility.Visible) FadeIn(GalleryGrid);
+        var result = GalleryGrid.Visibility == Visibility.Visible ? (FrameworkElement)GalleryGrid : GalleryEmptyState;
+        FadeIn(result, from: 0.88f, offset: 4, duration: 165);
     }
 
     private async Task RefreshGalleryAsync()
@@ -2220,7 +2200,7 @@ public partial class MainWindow : Window
 
     private void UpdateMicLiveStatus()
     {
-        if (!_isSettingsActive || ReferenceEquals(_currentPage, ViewerPage) || _isHidden)
+        if (!IsSettingsActive || _isHidden)
             return;
 
         if (_engine.IsRunning && _settings.RecordMicrophone && !_dirty &&
@@ -3418,11 +3398,13 @@ public partial class MainWindow : Window
 
     private void ShowInfoBar(InfoBarSeverity severity, string title, string message)
     {
+        bool wasOpen = StatusInfoBar.IsOpen;
         StatusInfoBar.Severity = severity;
         StatusInfoBar.Title = title.ToLowerInvariant();
         StatusInfoBar.Message = message.ToLowerInvariant();
         StatusInfoBar.Visibility = Visibility.Visible;
         StatusInfoBar.IsOpen = true;
+        AnimateInfoBar(show: true, replace: wasOpen);
         EnsureInfoBarTimer();
         _infoBarTimer!.Stop();
         if (!_savingChanges && severity != InfoBarSeverity.Error) _infoBarTimer.Start();
@@ -3431,14 +3413,53 @@ public partial class MainWindow : Window
     private void ClearInfoBar()
     {
         _infoBarTimer?.Stop();
-        StatusInfoBar.IsOpen = false;
-        StatusInfoBar.Visibility = Visibility.Collapsed;
+        if (StatusInfoBar.IsOpen) AnimateInfoBar(show: false);
+    }
+
+    private void StatusInfoBar_Closing(InfoBar sender, InfoBarClosingEventArgs args)
+    {
+        if (args.Reason != InfoBarCloseReason.CloseButton || !_uiSettings.AnimationsEnabled) return;
+        args.Cancel = true;
+        ClearInfoBar();
     }
 
     private void StatusInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
     {
         _infoBarTimer?.Stop();
         StatusInfoBar.Visibility = Visibility.Collapsed;
+    }
+
+    private void AnimateInfoBar(bool show, bool replace = false)
+    {
+        double opacity = StatusInfoBar.Opacity;
+        double offset = StatusInfoOffset.Y;
+        bool wasMoving = _infoBarMotion != null;
+        _infoBarMotion?.Stop();
+        _infoBarMotion = null;
+
+        StatusInfoBar.Opacity = show ? 1 : 0;
+        StatusInfoOffset.Y = show ? 0 : 6;
+        if (!_uiSettings.AnimationsEnabled)
+        {
+            if (!show) StatusInfoBar.IsOpen = false;
+            return;
+        }
+
+        var story = new Storyboard();
+        int duration = show ? 180 : 145;
+        double initialOpacity = show && !wasMoving ? (replace ? 0.84 : 0) : opacity;
+        double initialOffset = show && !wasMoving ? (replace ? 3 : 8) : offset;
+        AddMotion(story, StatusInfoBar, "Opacity", initialOpacity, StatusInfoBar.Opacity, 0, duration);
+        AddMotion(story, StatusInfoOffset, "Y", initialOffset, StatusInfoOffset.Y, 0, duration);
+        _infoBarMotion = story;
+        story.Completed += (_, _) =>
+        {
+            if (_infoBarMotion != story) return;
+            _infoBarMotion = null;
+            story.Stop();
+            if (!show) StatusInfoBar.IsOpen = false;
+        };
+        story.Begin();
     }
 
     private static void AddMotion(Storyboard storyboard, DependencyObject target, string path, double from, double to,
@@ -3485,74 +3506,17 @@ public partial class MainWindow : Window
         storyboard.Begin();
     }
 
-    private void UpdateSystemStats()
-    {
-        double? cpuPct = null;
-        try
-        {
-            if (GetSystemTimes(out var idle, out var kernel, out var user))
-            {
-                ulong i = idle.Ticks, k = kernel.Ticks, u = user.Ticks;
-                if (_statsBaselineTaken && k >= _lastKernelTicks && u >= _lastUserTicks && i >= _lastIdleTicks)
-                {
-                    ulong dTotal = (k - _lastKernelTicks) + (u - _lastUserTicks);
-                    ulong dIdle = i - _lastIdleTicks;
-                    if (dTotal > 0 && dTotal >= dIdle) cpuPct = 100.0 * (dTotal - dIdle) / dTotal;
-                }
-                _lastIdleTicks = i; _lastKernelTicks = k; _lastUserTicks = u;
-                _statsBaselineTaken = true;
-            }
-        }
-        catch { }
-
-        if (cpuPct is { } pct)
-        {
-            CpuValueText.Text = $"{pct:0}%";
-            CpuHintText.Text = "overall processor load";
-            double targetCpu = Math.Clamp(pct, 0, 100) / 100.0;
-            AnimateDouble(CpuBarScale, ScaleTransform.ScaleXProperty, targetCpu, 210);
-            ApplyMetricStyle(CpuCard, CpuBarFill, CpuValueText, CpuHintText, pct >= 85, pct >= 70);
-        }
-        else
-        {
-            CpuValueText.Text = "—";
-        }
-
-        try
-        {
-            var m = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
-            if (GlobalMemoryStatusEx(ref m))
-            {
-                double totalGb = m.ullTotalPhys / (1024.0 * 1024 * 1024);
-                double usedGb = (m.ullTotalPhys - m.ullAvailPhys) / (1024.0 * 1024 * 1024);
-                RamValueText.Text = $"{usedGb:0.0} / {totalGb:0} gb";
-                RamHintText.Text = $"{m.dwMemoryLoad}% in use";
-                double targetRam = Math.Clamp(m.dwMemoryLoad, 0, 100) / 100.0;
-                AnimateDouble(RamBarScale, ScaleTransform.ScaleXProperty, targetRam, 210);
-                ApplyMetricStyle(RamCard, RamBarFill, RamValueText, RamHintText, m.dwMemoryLoad >= 92, m.dwMemoryLoad >= 82);
-            }
-        }
-        catch { }
-    }
-
-    private void ApplyMetricStyle(Border card, Border barFill, TextBlock value, TextBlock hint, bool critical, bool elevated)
-    {
-        card.BorderBrush = GetThemedBrush("SurfaceBorderBrush");
-        barFill.Background = GetThemedBrush("AccentIndicatorBrush");
-        value.Foreground = GetThemedBrush("TextPrimaryBrush");
-        hint.Foreground = GetThemedBrush("TextTertiaryBrush");
-    }
-
     private void ExitApplicationAsync()
     {
         if (_isClosingForReal) return;
         if (_dirty) RevertPendingChanges();
         _isClosingForReal = true;
         UpdateHeroOrnament();
+        _infoBarTimer?.Stop();
+        _infoBarMotion?.Stop();
 
         UnregisterHotKey(_hwnd, HotkeyId);
         _bufferHealthTimer?.Stop();
-        _statsTimer?.Stop();
         _micRefreshTimer?.Stop();
         _micMeterTimer?.Stop();
         _deviceChangeDebounceTimer?.Stop();

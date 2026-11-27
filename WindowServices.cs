@@ -933,6 +933,7 @@ public sealed class ClipNotificationWindow : Window
     private readonly TextBlock _message;
     private readonly TextBlock _detail;
     private readonly FontIcon _statusIcon;
+    private readonly TranslateTransform _contentOffset = new();
     private readonly DispatcherTimer _lifetime = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly DispatcherTimer _motion = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly Windows.UI.ViewManagement.UISettings _uiSettings = new();
@@ -940,6 +941,7 @@ public sealed class ClipNotificationWindow : Window
     private int _motionFrom, _motionTo, _motionDuration, _currentX, _shownX, _hiddenX, _y;
     private bool _leaving;
     private double _motionOpacity;
+    private double _motionContentY;
 
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr hwnd);
@@ -981,7 +983,12 @@ public sealed class ClipNotificationWindow : Window
             Foreground = new SolidColorBrush(Color.FromArgb(255, 184, 190, 203)),
         };
 
-        var content = new Grid { ColumnSpacing = 14, Margin = new Thickness(18, 12, 18, 12) };
+        var content = new Grid
+        {
+            ColumnSpacing = 14,
+            Margin = new Thickness(18, 12, 18, 12),
+            RenderTransform = _contentOffset
+        };
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         content.Children.Add(new Border
@@ -1016,7 +1023,7 @@ public sealed class ClipNotificationWindow : Window
         TitleBarButtons.StripWindowFrame(_hwnd);
         if (!SetWindowDisplayAffinity(_hwnd, 0x11)) Logger.Debug("notification capture exclusion unavailable.");
 
-        _lifetime.Tick += (_, _) => { _lifetime.Stop(); BeginSlide(_hiddenX, 160, leaving: true); };
+        _lifetime.Tick += (_, _) => { _lifetime.Stop(); BeginSlide(_hiddenX, 175, leaving: true); };
         _motion.Tick += (_, _) => AdvanceSlide();
         Closed += (_, _) => { _lifetime.Stop(); _motion.Stop(); _instance = null; };
     }
@@ -1064,11 +1071,12 @@ public sealed class ClipNotificationWindow : Window
         {
             _currentX = _uiSettings.AnimationsEnabled ? _hiddenX : _shownX;
             _card.Opacity = _uiSettings.AnimationsEnabled ? 0 : 1;
+            _contentOffset.Y = _uiSettings.AnimationsEnabled ? 6 : 0;
         }
         _appWindow.MoveAndResize(new RectInt32(_currentX, _y, width, height));
         _appWindow.Show(false);
         SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011);
-        BeginSlide(_shownX, 190, leaving: false);
+        BeginSlide(_shownX, 220, leaving: false);
     }
 
     private void BeginSlide(int destination, int milliseconds, bool leaving)
@@ -1080,6 +1088,7 @@ public sealed class ClipNotificationWindow : Window
             else
             {
                 _card.Opacity = 1;
+                _contentOffset.Y = 0;
                 _currentX = destination;
                 SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011);
                 _lifetime.Start();
@@ -1088,6 +1097,7 @@ public sealed class ClipNotificationWindow : Window
         }
         _motionFrom = _currentX; _motionTo = destination;
         _motionOpacity = _card.Opacity;
+        _motionContentY = _contentOffset.Y;
         _motionDuration = milliseconds; _leaving = leaving;
         _motionStart = System.Diagnostics.Stopwatch.GetTimestamp();
         _motion.Start();
@@ -1102,6 +1112,7 @@ public sealed class ClipNotificationWindow : Window
             double eased = _leaving ? progress * progress * (3 - 2 * progress) : 1 - Math.Pow(1 - progress, 3);
             _currentX = (int)Math.Round(_motionFrom + (_motionTo - _motionFrom) * eased);
             _card.Opacity = _motionOpacity + ((_leaving ? 0 : 1) - _motionOpacity) * eased;
+            _contentOffset.Y = _motionContentY + ((_leaving ? -4 : 0) - _motionContentY) * eased;
             if (!SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011))
             {
                 HideSafely();
