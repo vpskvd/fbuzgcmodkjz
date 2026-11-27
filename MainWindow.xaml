@@ -9,7 +9,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid x:Name="PagesHost" Grid.Row="1">
@@ -1346,8 +1345,8 @@
             </StackPanel>
         </Grid>
 
-        <!-- ORDERED BOTTOM NOTIFICATION STACK (never overlaps) -->
-        <StackPanel x:Name="BottomToastStack" Grid.Row="2"
+        <!-- Keep notifications above the page without changing its available height. -->
+        <StackPanel x:Name="BottomToastStack" Grid.Row="1"
                     Canvas.ZIndex="30"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
@@ -1427,7 +1426,7 @@
         </StackPanel>
 
         <!-- Crisp 1px perimeter border framing the Acrylic window -->
-        <Border IsHitTestVisible="False" Grid.RowSpan="3"
+        <Border IsHitTestVisible="False" Grid.RowSpan="2"
                 BorderBrush="{ThemeResource WindowRimBorderBrush}"
                 BorderThickness="1"
                 Canvas.ZIndex="40"/>
