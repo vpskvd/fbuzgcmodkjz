@@ -112,6 +112,7 @@ pub struct FramePacer {
     last_seen: i64,
     next: u128,
     tolerance: i64,
+    fps: u32,
 }
 impl FramePacer {
     pub fn with_tolerance(tolerance: i64) -> Self {
@@ -122,6 +123,10 @@ impl FramePacer {
             return false;
         }
         self.last_seen = time;
+        if self.fps != fps {
+            self.fps = fps;
+            self.next = 0;
+        }
         if fps == 0 {
             return true;
         }
@@ -141,6 +146,17 @@ impl FramePacer {
         true
     }
 }
+
+fn sampling_rate(fps: u32, gpu: bool) -> u32 {
+    // The encoder paces the output. Let its GPU path pick a recent frame even
+    // when the display refresh and recording clocks have different phases.
+    if gpu {
+        fps.saturating_mul(2)
+    } else {
+        fps
+    }
+}
+
 pub unsafe fn create_device(
     adapter: Option<&IDXGIAdapter>,
 ) -> windows::core::Result<(ID3D11Device, ID3D11DeviceContext)> {
@@ -241,10 +257,9 @@ impl FramePublisher {
         if source_time < self.shared.start_qpc.load(Ordering::Acquire) {
             return false;
         }
-        let accepted = self.pacer.accept(
-            source_time,
-            self.shared.fps.load(Ordering::Relaxed).max(0) as u32,
-        );
+        let fps = self.shared.fps.load(Ordering::Relaxed).max(0) as u32;
+        let gpu = self.shared.gpu_mode.load(Ordering::Acquire) == 1;
+        let accepted = self.pacer.accept(source_time, sampling_rate(fps, gpu));
         if !accepted {
             self.shared.n_capture_drop.fetch_add(1, Ordering::Relaxed);
         }
@@ -960,6 +975,39 @@ mod tests {
                 assert!(!p.accept(time, fps as u32));
             }
         }
+    }
+
+    #[test]
+    fn gpu_sampling_keeps_a_fresh_frame_for_each_output_slot_at_144_hz() {
+        const FPS: u32 = 60;
+        let start = 10_000_000;
+        let mut pacer = FramePacer::with_tolerance(20_000);
+        let accepted: Vec<_> = (0..1440)
+            .map(|i| start + i * 10_000_000 / 144)
+            .filter(|&pts| pacer.accept(pts, sampling_rate(FPS, true)))
+            .collect();
+
+        for offset in [0, 20_000, 80_000, 140_000] {
+            let mut consumed = 0;
+            for i in 0..540 {
+                let due = start + offset + i * 10_000_000 / i64::from(FPS);
+                let next = accepted.partition_point(|&pts| pts <= due);
+                assert!(next > consumed, "repeated frame at slot {i}, phase {offset}");
+                consumed = next;
+            }
+        }
+    }
+
+    #[test]
+    fn sampling_resumes_immediately_after_gpu_to_cpu_fallback() {
+        let mut pacer = FramePacer::with_tolerance(20_000);
+        let start = 300_000_000_000;
+        assert!(pacer.accept(start, sampling_rate(60, true)));
+        assert!(pacer.accept(start + 120_000, sampling_rate(60, true)));
+        assert!(pacer.accept(start + 180_000, sampling_rate(60, false)));
+        assert!(!pacer.accept(start + 180_000, sampling_rate(60, false)));
+        assert!(!pacer.accept(start + 240_000, sampling_rate(60, false)));
+        assert!(pacer.accept(start + 350_000, sampling_rate(60, false)));
     }
 
     #[test]

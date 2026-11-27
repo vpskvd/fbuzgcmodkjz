@@ -861,6 +861,7 @@ pub struct GpuEncoder {
     mf: mf::MfEncoder,
     input: std::sync::Arc<GpuInput>,
     last_pts: i64,
+    last_input_pts: Option<i64>,
     convert_ns: i64,
 }
 
@@ -886,6 +887,7 @@ impl GpuEncoder {
             mf,
             input,
             last_pts: -1,
+            last_input_pts: None,
             convert_ns: 0,
         })
     }
@@ -916,6 +918,10 @@ impl GpuEncoder {
     pub fn latest_input_pts(&self) -> Option<i64> {
         let stamp = self.input.stamp.lock().unwrap_or_else(|e| e.into_inner());
         (stamp.0 > 0).then_some(stamp.1)
+    }
+
+    pub fn last_input_pts(&self) -> Option<i64> {
+        self.last_input_pts
     }
 
     pub fn encode_latest(&mut self, out: &mut Vec<EncodedFrame>) -> Result<Option<i64>, i32> {
@@ -952,6 +958,7 @@ impl GpuEncoder {
         if pts <= self.last_pts {
             return Ok(None);
         }
+        let input_pts = stamp.1;
         self.conv.run(lease.index)?;
         self.convert_ns += started.elapsed().as_nanos() as i64;
         drop(stamp);
@@ -959,6 +966,7 @@ impl GpuEncoder {
             lease.submit_transform(|sample| self.mf.encode_surface(sample, pts, out))?;
         }
         self.last_pts = pts;
+        self.last_input_pts = Some(input_pts);
         Ok(Some(pts))
     }
     pub fn flush(&mut self, out: &mut Vec<EncodedFrame>) {

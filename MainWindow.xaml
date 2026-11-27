@@ -490,6 +490,7 @@
                                             <ComboBoxItem FontFamily="Segoe UI" Content="low"/>
                                             <ComboBoxItem FontFamily="Segoe UI" Content="balanced"/>
                                             <ComboBoxItem FontFamily="Segoe UI" Content="high"/>
+                                            <ComboBoxItem FontFamily="Segoe UI" Content="very high"/>
                                         </ComboBox>
                                     </local:SettingRow>
                                 </StackPanel>

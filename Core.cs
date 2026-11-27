@@ -164,6 +164,7 @@ public sealed class Settings
                         "Low" => "Low",
                         "Balanced" => "Balanced",
                         "High" or "Quality" or "Ultra" => "High",
+                        "VeryHigh" => "VeryHigh",
                         _ => "Balanced"
                     };
                     loaded.SystemAudioMode = string.Equals(loaded.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase)
@@ -342,9 +343,10 @@ public readonly record struct VideoQualityProfile(string Name, int BitrateKbps, 
     {
         var (name, at60Fps) = preset switch
         {
-            "Quality" or "High" or "Ultra" => ("high", 9000),
-            "Balanced" => ("balanced", 6000),
-            _ => ("low", 4000)
+            "VeryHigh" => ("very high", 40000),
+            "Quality" or "High" or "Ultra" => ("high", 30000),
+            "Balanced" => ("balanced", 20000),
+            _ => ("low", 10000)
         };
         int rate = Math.Clamp(fps, 15, 240);
         return new VideoQualityProfile(name, at60Fps * rate / 60, 3840, 2160);
@@ -535,6 +537,7 @@ public sealed class RecorderEngine : IDisposable
         bool captureAudio = _captureSettings.RecordSystemAudio
             && (!selectedAudio || (SupportsSelectedAppAudio && audioApps.Length > 0));
         var quality = VideoQualityProfile.FromPreset(_captureSettings.QualityPreset, _captureSettings.FrameRate);
+        const uint scaleBitrateWithResolution = 128;
         bool ok = _engine.StartBuffering(
             monitorIndex: _captureSettings.CaptureMonitorIndex,
             ringSeconds: Math.Max(_captureSettings.ReplayDurationSeconds, 1),
@@ -546,7 +549,8 @@ public sealed class RecorderEngine : IDisposable
             captureMic: _captureSettings.RecordMicrophone,
             micDevice: _captureSettings.Microphone,
             targetWindow: window,
-            captureOptions: (uint)((_captureSettings.CaptureClientArea ? 1 : 0) | (_captureSettings.CaptureCursor ? 2 : 0) | (!_specific && _captureSettings.CaptureRoundedCorners ? 8 : 0) | (_captureSettings.CaptureSecondaryWindows ? 16 : 0) | (_specific && !selectedAudio ? 64 : 0)),
+            captureOptions: (uint)((_captureSettings.CaptureClientArea ? 1 : 0) | (_captureSettings.CaptureCursor ? 2 : 0) | (!_specific && _captureSettings.CaptureRoundedCorners ? 8 : 0) | (_captureSettings.CaptureSecondaryWindows ? 16 : 0) | (_specific && !selectedAudio ? 64 : 0))
+                | scaleBitrateWithResolution,
             outputWidthCap: quality.MaxWidth, outputHeightCap: quality.MaxHeight,
             systemAudioApps: captureAudio && selectedAudio ? audioApps : null);
 

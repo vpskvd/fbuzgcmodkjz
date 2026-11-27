@@ -28,6 +28,17 @@ pub const STAGE_MUX: i64 = 7;
 
 const SECOND_100NS: i64 = 10_000_000;
 const RING_BUDGET_BYTES: i64 = 1024 * 1024 * 1024;
+const CAPTURE_SCALE_BITRATE: u32 = 128;
+
+fn capture_bitrate(bitrate_kbps: i32, width: i32, height: i32, options: u32) -> u32 {
+    let base = (bitrate_kbps.max(1) as u32).saturating_mul(1000);
+    if options & CAPTURE_SCALE_BITRATE == 0 {
+        return base;
+    }
+    let pixels = f64::from(width.max(2)) * f64::from(height.max(2));
+    let resolution_scale = (pixels / (1920.0 * 1080.0)).sqrt().clamp(0.35, 2.0);
+    (f64::from(base) * resolution_scale).round().min(160_000_000.0) as u32
+}
 fn save_memory_available(audio_bytes: u64) -> bool {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
     let mut memory = MEMORYSTATUSEX { dwLength: std::mem::size_of::<MEMORYSTATUSEX>() as u32, ..Default::default() };
@@ -718,6 +729,17 @@ impl CfrClock {
         self.base_pts.map(|_| self.slot_pts(self.next_slot))
     }
 
+    fn wait_for_fresh_frame(&self, now: i64, latest: i64) -> bool {
+        let Some(due) = self.next_due_pts() else {
+            return false;
+        };
+        let interval = SECOND_100NS / self.fps;
+        let grace = (interval / 4).min(40_000);
+        // Allow a slightly late source frame to arrive without changing the
+        // output timestamp. A static or stalled source keeps its normal pace.
+        (due..due + grace).contains(&now) && due.saturating_sub(latest) < 2 * interval
+    }
+
     fn poll(&mut self, first_frame_pts: Option<i64>, now_pts: Option<i64>) -> Option<i64> {
         let base = match (self.base_pts, first_frame_pts) {
             (Some(b), _) => b,
@@ -776,7 +798,14 @@ fn gpu_loop(
         }
 
         let now_pts = shared.capture_time(qpc100ns());
-        let first_pts = enc.latest_input_pts().filter(|&p| p > enc.last_pts());
+        let latest_input = enc.latest_input_pts();
+        if let (Some(now), Some(latest)) = (now_pts, latest_input) {
+            if enc.last_input_pts() == Some(latest) && clock.wait_for_fresh_frame(now, latest) {
+                std::thread::sleep(Duration::from_millis(1));
+                continue;
+            }
+        }
+        let first_pts = latest_input.filter(|&p| p > enc.last_pts());
         if let Some(pts) = clock.poll(first_pts, now_pts) {
             let pending = std::mem::take(
                 &mut *shared
@@ -1061,11 +1090,12 @@ impl Engine {
             return IR_FAIL;
         };
         let target = self.shared.target_window.load(Ordering::Acquire);
+        let options = self.shared.capture_options.load(Ordering::Acquire);
         let dimensions = if target != 0 {
             unsafe {
                 capture::window_size(
                     windows::Win32::Foundation::HWND(target as *mut _),
-                    self.shared.capture_options.load(Ordering::Relaxed) & 1 != 0,
+                    options & 1 != 0,
                 )
             }
         } else {
@@ -1080,7 +1110,7 @@ impl Engine {
         let pref = encoder::EncoderPref::from_i32(encoder_pref).resolved();
         let gpu_path = pref != encoder::EncoderPref::Software
             && std::env::var("IR_GPU").map_or(true, |v| v != "0");
-        let bps = (bitrate_kbps.max(1) as i32).max(1) as u32 * 1000;
+        let bps = capture_bitrate(bitrate_kbps, res_w, res_h, options);
 
         let start_qpc = qpc100ns();
         *start_qpc_out = start_qpc;
@@ -1974,7 +2004,7 @@ pub unsafe extern "C" fn IR_SetCaptureTarget(
         engine
             .shared
             .capture_options
-            .store(options & 127, Ordering::Release);
+            .store(options & (127 | CAPTURE_SCALE_BITRATE), Ordering::Release);
         IR_OK
     })
 }
@@ -2069,6 +2099,36 @@ mod pause_tests {
         // Paused: capture_time returns None, so clock holds next_slot=3 cleanly
         assert_eq!(clock.poll(Some(0), None), None);
         assert_eq!(clock.poll(Some(0), Some(500_000)), Some(500_000));
+    }
+
+    #[test]
+    fn capture_grace_holds_the_same_output_slot_without_waiting_for_static_frames() {
+        let mut clock = CfrClock::new(60);
+        assert_eq!(clock.poll(Some(0), Some(0)), Some(0));
+        assert!(clock.wait_for_fresh_frame(166_666, 0));
+        assert!(!clock.wait_for_fresh_frame(206_666, 0));
+        assert_eq!(clock.poll(Some(190_000), Some(190_000)), Some(166_666));
+        assert!(!clock.wait_for_fresh_frame(333_333, 0));
+    }
+
+    #[test]
+    fn scaled_bitrate_uses_encoded_resolution_and_preserves_exact_mode() {
+        assert_eq!(capture_bitrate(9000, 3840, 2160, 0), 9_000_000);
+        let scale = CAPTURE_SCALE_BITRATE;
+        assert_eq!(capture_bitrate(10_000, 1920, 1080, scale), 10_000_000);
+        assert_eq!(capture_bitrate(10_000, 3840, 2160, scale), 20_000_000);
+        assert_eq!(capture_bitrate(20_000, 1280, 720, scale), 13_333_333);
+        assert_eq!(capture_bitrate(20_000, 1920, 1080, scale), 20_000_000);
+        assert_eq!(capture_bitrate(20_000, 3840, 2160, scale), 40_000_000);
+        assert_eq!(capture_bitrate(30_000, 1280, 720, scale), 20_000_000);
+        assert_eq!(capture_bitrate(30_000, 1920, 1080, scale), 30_000_000);
+        assert_eq!(capture_bitrate(30_000, 2560, 1440, scale), 40_000_000);
+        assert_eq!(capture_bitrate(30_000, 3840, 2160, scale), 60_000_000);
+        assert_eq!(capture_bitrate(40_000, 1920, 1080, scale), 40_000_000);
+        assert_eq!(capture_bitrate(40_000, 3840, 2160, scale), 80_000_000);
+        assert_eq!(capture_bitrate(60_000, 3840, 2160, scale), 120_000_000);
+        assert_eq!(capture_bitrate(80_000, 3840, 2160, scale), 160_000_000);
+        assert_eq!(capture_bitrate(160_000, 3840, 2160, scale), 160_000_000);
     }
 }
 #[no_mangle]

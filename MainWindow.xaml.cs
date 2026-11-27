@@ -2431,6 +2431,7 @@ public partial class MainWindow : Window
         {
             "Balanced" => 1,
             "Quality" or "High" or "Ultra" => 2,
+            "VeryHigh" => 3,
             _ => 0
         };
 
@@ -2441,6 +2442,7 @@ public partial class MainWindow : Window
         {
             1 => "Balanced",
             2 => "High",
+            3 => "VeryHigh",
             _ => "Low"
         };
         CheckDirty();
