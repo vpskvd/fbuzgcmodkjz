@@ -1,9 +1,9 @@
 :root {
   --accent: #b8becb;
   --player-surface: #181b21;
-  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-press: 155ms;
-  --motion-panel: 220ms;
+  --motion-ease: cubic-bezier(0.30, 0.12, 0.25, 1);
+  --motion-press: 235ms;
+  --motion-panel: 335ms;
   --bar-h: 44px;
   --bar-inset: 16px;
   --bar-surface: rgba(22, 25, 31, 0.94);
@@ -391,7 +391,26 @@ input[type="range"]:active::-webkit-slider-thumb {
   border-radius: 8px;
   background: var(--bar-surface);
   box-shadow: 0 8px 28px #0005;
-  animation: barEnter var(--motion-press) var(--motion-ease) backwards;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--motion-panel) var(--motion-ease),
+              transform var(--motion-panel) var(--motion-ease),
+              display var(--motion-panel);
+  transition-behavior: allow-discrete;
+}
+
+#speedMenu[hidden] {
+  display: none;
+  opacity: 0;
+  transform: translateY(5px);
+  pointer-events: none;
+}
+
+@starting-style {
+  #speedMenu:not([hidden]) {
+    opacity: 0;
+    transform: translateY(5px);
+  }
 }
 
 #speedMenu::-webkit-scrollbar { width: 6px; }
@@ -499,7 +518,7 @@ body.inline video {
 #icWaveLow,
 #icWaveHigh,
 #icMuted {
-  transition: opacity 120ms linear;
+  transition: opacity var(--motion-panel) var(--motion-ease);
 }
 
 /* ================= CROP EDITOR OVERLAY ================= */
@@ -515,16 +534,19 @@ body.editing .close-btn {
   overflow: hidden;
   touch-action: none;
   user-select: none;
-  animation: cropEnter var(--motion-panel) var(--motion-ease) both;
+  opacity: 1;
+  transition: opacity var(--motion-panel) var(--motion-ease), display var(--motion-panel);
+  transition-behavior: allow-discrete;
 }
 
-@keyframes cropEnter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@starting-style {
+  #cropLayer:not([hidden]) { opacity: 0; }
 }
 
 #cropLayer[hidden] {
   display: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 #cropBox {

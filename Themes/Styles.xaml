@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:InstantReplay">
 
-    <CubicEase x:Key="ControlOpacityEase" EasingMode="EaseOut"/>
+    <SineEase x:Key="ControlOpacityEase" EasingMode="EaseInOut"/>
 
     <!-- ================================================================== -->
     <!-- TYPOGRAPHY HIERARCHY (Segoe UI, clean weight 400-600)      -->
@@ -117,28 +117,28 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -197,28 +197,28 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -291,28 +291,28 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -404,19 +404,19 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.255" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.155" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -692,26 +692,26 @@
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Width" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Height" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Width" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Height" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="12"/>
                                         </DoubleAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)">
-                                            <LinearColorKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="{ThemeResource ToggleSwitchStrokeOffPointerOver}"/>
+                                            <LinearColorKeyFrame KeyTime="0:0:0.245" Value="{ThemeResource ToggleSwitchStrokeOffPointerOver}"/>
                                         </ColorAnimationUsingKeyFrames>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)">
-                                            <LinearColorKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="{ThemeResource ToggleSwitchFillOffPointerOver}"/>
+                                            <LinearColorKeyFrame KeyTime="0:0:0.245" Value="{ThemeResource ToggleSwitchFillOffPointerOver}"/>
                                         </ColorAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ToggleSwitchKnobFillOffPointerOver}"/>
@@ -726,16 +726,16 @@
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ToggleSwitchStrokeOnPointerOver}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Width" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Height" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Width" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Height" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
                                         </DoubleAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -748,10 +748,10 @@
                                     </VisualState.Setters>
                                     <Storyboard>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)">
-                                            <LinearColorKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="{ThemeResource ToggleSwitchStrokeOffPressed}"/>
+                                            <LinearColorKeyFrame KeyTime="0:0:0.245" Value="{ThemeResource ToggleSwitchStrokeOffPressed}"/>
                                         </ColorAnimationUsingKeyFrames>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)">
-                                            <LinearColorKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="{ThemeResource ToggleSwitchFillOffPressed}"/>
+                                            <LinearColorKeyFrame KeyTime="0:0:0.245" Value="{ThemeResource ToggleSwitchFillOffPressed}"/>
                                         </ColorAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobBounds" Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ToggleSwitchFillOnPressed}"/>
@@ -766,26 +766,26 @@
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ToggleSwitchKnobFillOnPressed}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Width" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="17"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="17"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Height" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Width" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="17"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="17"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Height" EnableDependentAnimation="True">
-                                            <SplineDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.245" KeySpline="{StaticResource ControlFastOutSlowInKeySpline}" Value="14"/>
                                         </DoubleAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)">
-                                            <LinearColorKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="{ThemeResource ToggleSwitchStrokeOffDisabled}"/>
+                                            <LinearColorKeyFrame KeyTime="0:0:0.245" Value="{ThemeResource ToggleSwitchStrokeOffDisabled}"/>
                                         </ColorAnimationUsingKeyFrames>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)">
-                                            <LinearColorKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="{ThemeResource ToggleSwitchFillOffDisabled}"/>
+                                            <LinearColorKeyFrame KeyTime="0:0:0.245" Value="{ThemeResource ToggleSwitchFillOffDisabled}"/>
                                         </ColorAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobBounds" Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ToggleSwitchFillOnDisabled}"/>
@@ -808,16 +808,16 @@
                                         <Storyboard>
                                             <RepositionThemeAnimation TargetName="SwitchKnob" FromHorizontalOffset="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.KnobCurrentToOnOffset}"/>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobBounds" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="1"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="1"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="1"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="1"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                             </DoubleAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualTransition>
@@ -838,13 +838,13 @@
                                         <Storyboard>
                                             <RepositionThemeAnimation TargetName="SwitchKnob" FromHorizontalOffset="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.KnobCurrentToOffOffset}"/>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobBounds" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="1"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="1"/>
                                             </DoubleAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualTransition>
@@ -857,16 +857,16 @@
                                         <Storyboard>
                                             <RepositionThemeAnimation TargetName="SwitchKnob" FromHorizontalOffset="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.KnobOffToOnOffset}"/>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobBounds" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="1"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="1"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="1"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="1"/>
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Opacity">
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                             </DoubleAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualTransition>
@@ -877,16 +877,16 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="KnobTranslateTransform" Storyboard.TargetProperty="X" To="20" Duration="0"/>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobBounds" Storyboard.TargetProperty="Opacity">
-                                            <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="1"/>
+                                            <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="1"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="OuterBorder" Storyboard.TargetProperty="Opacity">
-                                            <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                            <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOn" Storyboard.TargetProperty="Opacity">
-                                            <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="1"/>
+                                            <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="1"/>
                                         </DoubleAnimationUsingKeyFrames>
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SwitchKnobOff" Storyboard.TargetProperty="Opacity">
-                                            <LinearDoubleKeyFrame KeyTime="{StaticResource ControlFasterAnimationDuration}" Value="0"/>
+                                            <LinearDoubleKeyFrame KeyTime="0:0:0.245" Value="0"/>
                                         </DoubleAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>

@@ -891,11 +891,11 @@ public static class UiHover
         }
 
         var compositor = visual.Compositor;
-        var easing = compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0.22f, 1), new System.Numerics.Vector2(0.36f, 1));
+        var easing = compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0.30f, 0.12f), new System.Numerics.Vector2(0.25f, 1));
         var animation = compositor.CreateVector3KeyFrameAnimation();
         animation.InsertExpressionKeyFrame(0, "this.StartingValue");
         animation.InsertKeyFrame(1, new System.Numerics.Vector3(target, target, 1), easing);
-        animation.Duration = TimeSpan.FromMilliseconds(target < 1 ? 105 : 180);
+        animation.Duration = TimeSpan.FromMilliseconds(target < 1 ? 145 : 250);
         visual.CenterPoint = new System.Numerics.Vector3((float)element.ActualWidth / 2, (float)element.ActualHeight / 2, 0);
         visual.StartAnimation("Scale", animation);
     }
@@ -1023,7 +1023,7 @@ public sealed class ClipNotificationWindow : Window
         TitleBarButtons.StripWindowFrame(_hwnd);
         if (!SetWindowDisplayAffinity(_hwnd, 0x11)) Logger.Debug("notification capture exclusion unavailable.");
 
-        _lifetime.Tick += (_, _) => { _lifetime.Stop(); BeginSlide(_hiddenX, 175, leaving: true); };
+        _lifetime.Tick += (_, _) => { _lifetime.Stop(); BeginSlide(_hiddenX, 265, leaving: true); };
         _motion.Tick += (_, _) => AdvanceSlide();
         Closed += (_, _) => { _lifetime.Stop(); _motion.Stop(); _instance = null; };
     }
@@ -1076,7 +1076,7 @@ public sealed class ClipNotificationWindow : Window
         _appWindow.MoveAndResize(new RectInt32(_currentX, _y, width, height));
         _appWindow.Show(false);
         SetWindowPos(_hwnd, new IntPtr(-1), _currentX, _y, 0, 0, 0x0011);
-        BeginSlide(_shownX, 220, leaving: false);
+        BeginSlide(_shownX, 340, leaving: false);
     }
 
     private void BeginSlide(int destination, int milliseconds, bool leaving)
@@ -1109,7 +1109,7 @@ public sealed class ClipNotificationWindow : Window
         {
             double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(_motionStart).TotalMilliseconds;
             double progress = Math.Clamp(elapsed / _motionDuration, 0, 1);
-            double eased = _leaving ? progress * progress * (3 - 2 * progress) : 1 - Math.Pow(1 - progress, 3);
+            double eased = progress * progress * (3 - 2 * progress);
             _currentX = (int)Math.Round(_motionFrom + (_motionTo - _motionFrom) * eased);
             _card.Opacity = _motionOpacity + ((_leaving ? 0 : 1) - _motionOpacity) * eased;
             _contentOffset.Y = _motionContentY + ((_leaving ? -4 : 0) - _motionContentY) * eased;

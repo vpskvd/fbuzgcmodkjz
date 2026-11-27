@@ -16,7 +16,7 @@ public sealed class MediaOrb : Canvas
     private static readonly Color White = Color.FromArgb(255, 255, 255, 255);
     private const int SpokeCount = 16;
     private const int TrailCount = 15;
-    private const double CycleSeconds = 18;
+    private const double CycleSeconds = 24;
     private const double OrbitRadius = 8.8;
     private readonly Stopwatch _clock = new();
     private readonly Spoke[] _spokes = new Spoke[SpokeCount];
