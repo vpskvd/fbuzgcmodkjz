@@ -622,7 +622,7 @@ public partial class MainWindow : Window
             var slide = visual.Compositor.CreateVector3KeyFrameAnimation();
             slide.InsertExpressionKeyFrame(0, "this.StartingValue");
             slide.InsertKeyFrame(1, target, visual.Compositor.CreateCubicBezierEasingFunction(MotionEaseStart, MotionEaseEnd));
-            slide.Duration = TimeSpan.FromMilliseconds(340);
+            slide.Duration = TimeSpan.FromMilliseconds(210);
             visual.StartAnimation("Translation", slide);
         }
         else if (!animate || target != _navPillPosition)
@@ -1219,7 +1219,12 @@ public partial class MainWindow : Window
         if (_galleryRefreshAgain) { _galleryRefreshAgain = false; _ = RefreshGalleryAsync(); }
     }
 
-    private void GalleryGrid_Loaded(object sender, RoutedEventArgs e) => UpdateGalleryColumns();
+    private void GalleryGrid_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (FindVisualChildByName<ScrollViewer>(GalleryGrid, "ScrollViewer") is { } scroller)
+            scroller.Style = SettingsPage.Style;
+        UpdateGalleryColumns();
+    }
 
     private void GalleryGrid_SizeChanged(object sender, SizeChangedEventArgs e)
     {
@@ -1228,7 +1233,12 @@ public partial class MainWindow : Window
 
     private void UpdateGalleryColumns()
     {
-        double width = GalleryGrid.ActualWidth - GalleryGrid.Padding.Left - GalleryGrid.Padding.Right;
+        const double baseInset = 18;
+        double outerWidth = GalleryGrid.ActualWidth;
+        double sideInset = baseInset + Math.Max(0, (outerWidth - DefaultWindowWidthDips) / 2);
+        if (Math.Abs(GalleryGrid.Padding.Left - sideInset) >= 0.1)
+            GalleryGrid.Padding = new Thickness(sideInset, 0, sideInset, 8);
+        double width = outerWidth - 2 * sideInset;
         if (width < 1 || GalleryGrid.ItemsPanelRoot is not ItemsWrapGrid panel) return;
         const int minimumSlotWidth = 260;
         const int slotPadding = 12;

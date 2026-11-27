@@ -14,7 +14,7 @@
         <Grid x:Name="PagesHost" Grid.Row="1">
 
             <!-- Home uses one scrolling, virtualized list with the hero and filters in its header. -->
-            <Grid x:Name="HomePage" MaxWidth="960">
+            <Grid x:Name="HomePage">
                 <GridView x:Name="GalleryGrid"
                           Loaded="GalleryGrid_Loaded" SizeChanged="GalleryGrid_SizeChanged"
                           Padding="18,0,18,8"
@@ -273,8 +273,13 @@
                                                 MinWidth="44"
                                                 HorizontalAlignment="Right"
                                                 VerticalAlignment="Bottom">
-                                            <TextBlock Text="{x:Bind DurationText, Mode=OneWay}"
-                                                       Style="{StaticResource MediaBadgeLabel}" TextAlignment="Center"/>
+                                            <TextBlock x:Name="ClipDurationLabel"
+                                                       Text="{x:Bind DurationText, Mode=OneWay}"
+                                                       Style="{StaticResource MediaBadgeLabel}"
+                                                       HorizontalAlignment="Center"
+                                                       TextAlignment="Center"
+                                                       OpticalMarginAlignment="TrimSideBearings"
+                                                       RenderTransform="{x:Null}"/>
                                         </Border>
                                     </Grid>
 
@@ -315,7 +320,7 @@
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       VerticalAlignment="Center"
-                                                      Data="M 2,4.5 Q 2,3.5 3,3.5 H 6.5 L 8,5 H 13 Q 14,5 14,6 V 12.5 Q 14,13.5 13,13.5 H 3 Q 2,13.5 2,12.5 Z"/>
+                                                      Data="M 2,5 Q 2,4 3,4 H 6.5 L 8,5.5 H 13 Q 14,5.5 14,6.5 V 13 Q 14,14 13,14 H 3 Q 2,14 2,13 Z"/>
                                             </Button>
                                             <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
                                                     AutomationProperties.Name="delete clip"
