@@ -895,7 +895,7 @@ public static class UiHover
         var animation = compositor.CreateVector3KeyFrameAnimation();
         animation.InsertExpressionKeyFrame(0, "this.StartingValue");
         animation.InsertKeyFrame(1, new System.Numerics.Vector3(target, target, 1), easing);
-        animation.Duration = TimeSpan.FromMilliseconds(target < 1 ? 115 : 165);
+        animation.Duration = TimeSpan.FromMilliseconds(target < 1 ? 105 : 180);
         visual.CenterPoint = new System.Numerics.Vector3((float)element.ActualWidth / 2, (float)element.ActualHeight / 2, 0);
         visual.StartAnimation("Scale", animation);
     }

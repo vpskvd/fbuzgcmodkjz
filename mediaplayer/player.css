@@ -2,8 +2,8 @@
   --accent: #b8becb;
   --player-surface: #181b21;
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-press: 140ms;
-  --motion-panel: 200ms;
+  --motion-press: 155ms;
+  --motion-panel: 220ms;
   --bar-h: 44px;
   --bar-inset: 16px;
   --bar-surface: rgba(22, 25, 31, 0.94);
@@ -212,7 +212,7 @@ body.paused .big {
 @keyframes barEnter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -416,6 +416,7 @@ input[type="range"]:active::-webkit-slider-thumb {
   font-variant-numeric: tabular-nums;
   text-align: center;
   cursor: pointer;
+  transition: background-color var(--motion-press) var(--motion-ease);
 }
 
 #speedMenu button + button { margin-top: 4px; }
@@ -514,7 +515,7 @@ body.editing .close-btn {
   overflow: hidden;
   touch-action: none;
   user-select: none;
-  animation: cropEnter 160ms var(--motion-ease) both;
+  animation: cropEnter var(--motion-panel) var(--motion-ease) both;
 }
 
 @keyframes cropEnter {

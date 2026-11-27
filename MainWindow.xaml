@@ -13,335 +13,332 @@
 
         <Grid x:Name="PagesHost" Grid.Row="1">
 
-            <!-- PAGE 1: HOME (Hero -> Gallery) -->
-            <ScrollViewer x:Name="HomePage"
-                          Style="{StaticResource PageScrollViewerStyle}"
-                          Foreground="{ThemeResource TextPrimaryBrush}"
-                          Visibility="Visible"
-                          HorizontalScrollMode="Disabled"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <Grid Padding="{StaticResource PageInsets}">
-                    <StackPanel MaxWidth="912"
-                                HorizontalAlignment="Stretch"
-                                Spacing="16">
+            <!-- Home uses one scrolling, virtualized list with the hero and filters in its header. -->
+            <Grid x:Name="HomePage" MaxWidth="960">
+                <GridView x:Name="GalleryGrid"
+                          Loaded="GalleryGrid_Loaded" SizeChanged="GalleryGrid_SizeChanged"
+                          Padding="18,0,18,8"
+                          ItemContainerStyle="{StaticResource CleanGalleryGridViewItemStyle}"
+                          SelectionMode="None"
+                          IsItemClickEnabled="True"
+                          ItemClick="GalleryGrid_ItemClick"
+                          ScrollViewer.HorizontalScrollMode="Disabled"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollMode="Auto"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <GridView.Header>
+                        <StackPanel Margin="6,20,6,12" Spacing="16">
+                            <!-- 1. HERO REPLAY DECK -->
+                            <Grid x:Name="HeroContainer">
+                                <Border x:Name="HeroCard" Style="{StaticResource Card}"
+                                        Background="{ThemeResource HeroCardBrush}" Padding="20">
+                                    <Grid ColumnSpacing="20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                        <!-- 1. HERO REPLAY DECK -->
-                        <Grid x:Name="HeroContainer">
-                            <Border x:Name="HeroCard" Style="{StaticResource Card}"
-                                    Background="{ThemeResource HeroCardBrush}" Padding="20">
-                                <Grid ColumnSpacing="20">
+                                        <Border Width="64" Height="64" CornerRadius="8" VerticalAlignment="Center"
+                                                Background="{ThemeResource SurfaceElevatedBrush}" BorderThickness="1"
+                                                BorderBrush="{ThemeResource SurfaceBorderBrush}">
+                                            <local:MediaOrb x:Name="HeroOrnament" Width="46" Height="46"
+                                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                            <TextBlock Style="{StaticResource DisplayTitle}"
+                                                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                       AutomationProperties.HeadingLevel="Level1">
+                                                <Run Text="instant replay"/>
+                                                <Run Text="&#x2009;" FontSize="12"/>
+                                                <Run x:Name="HeroBufferText" Text="0 s / 60 s" FontSize="12" FontWeight="Normal"
+                                                     Typography.NumeralAlignment="Tabular" Foreground="{ThemeResource TextSecondaryBrush}"/>
+                                            </TextBlock>
+                                            <Grid ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Background="{ThemeResource KeycapBgBrush}" BorderBrush="{ThemeResource KeycapBorderBrush}"
+                                                        BorderThickness="1" CornerRadius="4" Padding="6,0" MinHeight="20"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock x:Name="HeroHotkeyText" Text="shift + s" Style="{StaticResource CenteredCaption}"
+                                                               Foreground="{ThemeResource TextPrimaryBrush}"/>
+                                                </Border>
+                                                <TextBlock x:Name="HeroSummaryText" Grid.Column="1" Text="60 fps · whole desktop"
+                                                           Style="{StaticResource CenteredCaption}" TextTrimming="CharacterEllipsis"/>
+                                            </Grid>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <Button FontFamily="Segoe UI" x:Name="SaveReplayButton"
+                                                    AutomationProperties.Name="save replay"
+                                                    Visibility="Collapsed"
+                                                    Style="{StaticResource AccentButtonStyle}"
+                                                    MinWidth="128"
+                                                    Click="SaveReplayButton_Click"
+                                                    ToolTipService.ToolTip="save buffered replay now">
+                                                <TextBlock x:Name="SaveReplayLabel"
+                                                           Text="save replay"
+                                                           Style="{StaticResource ToolbarLabel}"
+                                                           FontWeight="SemiBold"/>
+                                            </Button>
+
+                                            <Button FontFamily="Segoe UI" x:Name="StartReplayButton"
+                                                    AutomationProperties.Name="start replay"
+                                                    Style="{StaticResource AccentButtonStyle}"
+                                                    MinWidth="132"
+                                                    Click="StartStopButton_Click">
+                                                <TextBlock x:Name="StartReplayText"
+                                                           Text="start replay"
+                                                           Style="{StaticResource ToolbarLabel}"
+                                                           FontWeight="SemiBold"/>
+                                            </Button>
+
+                                            <Button FontFamily="Segoe UI" x:Name="StopReplayButton"
+                                                    AutomationProperties.Name="stop"
+                                                    Visibility="Collapsed"
+                                                    Style="{StaticResource DangerButtonStyle}"
+                                                    MinWidth="120"
+                                                    Click="StartStopButton_Click">
+                                                <TextBlock x:Name="StopReplayText"
+                                                           Text="stop"
+                                                           Style="{StaticResource ToolbarLabel}"
+                                                           FontWeight="SemiBold"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Concise Save Flash Confirmation Border -->
+                                <Border x:Name="HeroSaveFlash"
+                                        CornerRadius="8"
+                                        BorderBrush="{ThemeResource AccentBrush}"
+                                        BorderThickness="1.5"
+                                        Opacity="0"
+                                        IsHitTestVisible="False"/>
+                            </Grid>
+
+                            <!-- 2. GALLERY SECTION -->
+                            <StackPanel x:Name="GallerySection" Spacing="12">
+
+                                <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <Border Width="64" Height="64" CornerRadius="8" VerticalAlignment="Center"
-                                            Background="{ThemeResource SurfaceElevatedBrush}" BorderThickness="1"
-                                            BorderBrush="{ThemeResource SurfaceBorderBrush}">
-                                        <local:MediaOrb x:Name="HeroOrnament" Width="46" Height="46"
-                                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
+                                    <TextBlock AutomationProperties.HeadingLevel="Level2"
+                                               Style="{StaticResource SectionTitle}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxLines="1">
+                                        <Run Text="gallery"/>
+                                        <Run Text="&#x2009;" FontSize="12"/>
+                                        <Run x:Name="GalleryCountText" Text="0 clips" FontSize="12" FontWeight="Normal"
+                                             Typography.NumeralAlignment="Tabular" Foreground="{ThemeResource TextTertiaryBrush}"/>
+                                    </TextBlock>
 
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                        <TextBlock Style="{StaticResource DisplayTitle}"
-                                                   TextTrimming="CharacterEllipsis" MaxLines="1"
-                                                   AutomationProperties.HeadingLevel="Level1">
-                                            <Run Text="instant replay"/>
-                                            <Run Text="&#x2009;" FontSize="12"/>
-                                            <Run x:Name="HeroBufferText" Text="0 s / 60 s" FontSize="12" FontWeight="Normal"
-                                                 Typography.NumeralAlignment="Tabular" Foreground="{ThemeResource TextSecondaryBrush}"/>
-                                        </TextBlock>
-                                        <Grid ColumnSpacing="8">
+                                    <Button FontFamily="Segoe UI" x:Name="OpenFolderButton"
+                                            Grid.Column="1"
+                                            Style="{StaticResource BaseButtonStyle}"
+                                            Height="32"
+                                            CornerRadius="4"
+                                            Padding="12,0"
+                                            Click="OpenReplaysFolderButton_Click"
+                                            ToolTipService.ToolTip="open replay folder">
+                                        <TextBlock x:Name="GalleryOpenFolderText"
+                                                   Text="open folder"
+                                                   Style="{StaticResource ToolbarLabel}"/>
+                                    </Button>
+                                </Grid>
+
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Disabled">
+                                    <StackPanel x:Name="CategoryFilterBar"
+                                                Orientation="Horizontal"
+                                                Spacing="8"/>
+                                </ScrollViewer>
+                                <Border x:Name="GalleryEmptyState"
+                                        Visibility="Collapsed"
+                                        Style="{StaticResource Card}"
+                                        Padding="24,32">
+                                    <StackPanel HorizontalAlignment="Center" Spacing="8">
+                                        <TextBlock Text="no replays yet"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock x:Name="EmptyGalleryHintText"
+                                                   Text="press shift + s while recording to save your first clip."
+                                                   Style="{StaticResource Mono}"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="400"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </GridView.Header>
+                    <GridView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" ItemWidth="270" ItemHeight="220"/>
+                        </ItemsPanelTemplate>
+                    </GridView.ItemsPanel>
+                    <GridView.ItemContainerTransitions>
+                        <TransitionCollection/>
+                    </GridView.ItemContainerTransitions>
+                    <GridView.ItemTemplate>
+                        <DataTemplate x:DataType="local:ReplayItem">
+                            <Border x:Name="CardRoot"
+                                    CornerRadius="8"
+                                    Background="{ThemeResource SurfaceBrush}"
+                                    BorderBrush="{ThemeResource SurfaceBorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="60"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid CornerRadius="7,7,0,0"
+                                          Background="{ThemeResource SurfaceElevatedBrush}">
+                                        <Path Width="24" Height="20" Stretch="Uniform"
+                                              Stroke="{ThemeResource TextTertiaryBrush}"
+                                              StrokeThickness="1.5"
+                                              Opacity="0.32"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Data="M 2,3 H 18 C 19.1,3 20,3.9 20,5 V 15 C 20,16.1 19.1,17 18,17 H 2 C 0.9,17 0,16.1 0,15 V 5 C 0,3.9 0.9,3 2,3 Z M 8,7 L 13,10 L 8,13 Z"/>
+                                        <Image Source="{x:Bind Thumbnail, Mode=OneWay}"
+                                               Stretch="UniformToFill"/>
+
+                                        <Rectangle Height="48"
+                                                   VerticalAlignment="Bottom"
+                                                   IsHitTestVisible="False"
+                                                   Fill="{ThemeResource MediaBottomScrimBrush}"/>
+                                        <Rectangle x:Name="ThumbHoverScrim"
+                                                   IsHitTestVisible="False"
+                                                   Fill="{ThemeResource MediaHoverDimBrush}"
+                                                   Opacity="0"/>
+
+                                        <Border x:Name="PlayOrb"
+                                                Width="36"
+                                                Height="36"
+                                                CornerRadius="18"
+                                                Background="{ThemeResource MediaOverlayChipBrush}"
+                                                BorderBrush="{ThemeResource MediaOverlayChipBorderBrush}"
+                                                BorderThickness="1"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Opacity="0.90">
+                                            <Path Width="10" Height="12" Stretch="Uniform"
+                                                  Margin="2,0,0,0"
+                                                  Fill="{StaticResource MediaPillForegroundBrush}"
+                                                  Data="M 1,0.5 L 11,6.5 L 1,12.5 Z"/>
+                                        </Border>
+
+                                        <!-- Non-overlapping Top Badges -->
+                                        <Grid Margin="8"
+                                              ColumnSpacing="8"
+                                              VerticalAlignment="Top">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <Border Background="{ThemeResource KeycapBgBrush}" BorderBrush="{ThemeResource KeycapBorderBrush}"
-                                                    BorderThickness="1" CornerRadius="4" Padding="6,0" MinHeight="20"
-                                                    VerticalAlignment="Center">
-                                                <TextBlock x:Name="HeroHotkeyText" Text="shift + s" Style="{StaticResource CenteredCaption}"
-                                                           Foreground="{ThemeResource TextPrimaryBrush}"/>
+
+                                            <Border Grid.Column="0"
+                                                    Style="{StaticResource MediaBadge}"
+                                                    HorizontalAlignment="Left"
+                                                    ToolTipService.ToolTip="{x:Bind Category}">
+                                                <TextBlock Text="{x:Bind BadgeCategory}" Style="{StaticResource MediaBadgeLabel}"/>
                                             </Border>
-                                            <TextBlock x:Name="HeroSummaryText" Grid.Column="1" Text="60 fps · whole desktop"
-                                                       Style="{StaticResource CenteredCaption}" TextTrimming="CharacterEllipsis"/>
+
+                                            <Border x:Name="ClipMetricsBadge" Grid.Column="1"
+                                                    Style="{StaticResource MediaBadge}"
+                                                    HorizontalAlignment="Right">
+                                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                    <TextBlock Text="{x:Bind FpsText, Mode=OneWay}"
+                                                               Visibility="{x:Bind BadgeFpsVisibility, Mode=OneWay}"
+                                                               Style="{StaticResource MediaBadgeLabel}" Foreground="#B9C2D0"/>
+                                                    <TextBlock Text="·" Visibility="{x:Bind BadgeFpsVisibility, Mode=OneWay}"
+                                                               Style="{StaticResource MediaBadgeLabel}" Foreground="#B9C2D0"/>
+                                                    <TextBlock Text="{x:Bind SizeText, Mode=OneWay}"
+                                                               Style="{StaticResource MediaBadgeLabel}"/>
+                                                </StackPanel>
+                                            </Border>
                                         </Grid>
-                                    </StackPanel>
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <Button FontFamily="Segoe UI" x:Name="SaveReplayButton"
-                                                AutomationProperties.Name="save replay"
-                                                Visibility="Collapsed"
-                                                Style="{StaticResource AccentButtonStyle}"
-                                                MinWidth="128"
-                                                Click="SaveReplayButton_Click"
-                                                ToolTipService.ToolTip="save buffered replay now">
-                                            <TextBlock x:Name="SaveReplayLabel"
-                                                       Text="save replay"
-                                                       Style="{StaticResource ToolbarLabel}"
-                                                       FontWeight="SemiBold"/>
-                                        </Button>
+                                        <!-- Duration Stamp -->
+                                        <Border x:Name="ClipDurationBadge" Style="{StaticResource MediaBadge}"
+                                                Margin="8"
+                                                MinWidth="44"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Bottom">
+                                            <TextBlock Text="{x:Bind DurationText, Mode=OneWay}"
+                                                       Style="{StaticResource MediaBadgeLabel}" TextAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
 
-                                        <Button FontFamily="Segoe UI" x:Name="StartReplayButton"
-                                                AutomationProperties.Name="start replay"
-                                                Style="{StaticResource AccentButtonStyle}"
-                                                MinWidth="132"
-                                                Click="StartStopButton_Click">
-                                            <TextBlock x:Name="StartReplayText"
-                                                       Text="start replay"
-                                                       Style="{StaticResource ToolbarLabel}"
-                                                       FontWeight="SemiBold"/>
-                                        </Button>
+                                    <!-- Card Footer (timestamp + edit marker & resolution — never repeats badge label) -->
+                                    <Grid Grid.Row="1" Padding="12,8" ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                                        <Button FontFamily="Segoe UI" x:Name="StopReplayButton"
-                                                AutomationProperties.Name="stop"
-                                                Visibility="Collapsed"
-                                                Style="{StaticResource DangerButtonStyle}"
-                                                MinWidth="120"
-                                                Click="StartStopButton_Click">
-                                            <TextBlock x:Name="StopReplayText"
-                                                       Text="stop"
-                                                       Style="{StaticResource ToolbarLabel}"
-                                                       FontWeight="SemiBold"/>
-                                        </Button>
-                                    </StackPanel>
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{x:Bind CardTitleText, Mode=OneWay}"
+                                                       FontSize="13"
+                                                       FontWeight="Medium"
+                                                       Typography.NumeralAlignment="Tabular"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{ThemeResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{x:Bind ResolutionText, Mode=OneWay}"
+                                                       FontSize="11.5"
+                                                       Typography.NumeralAlignment="Tabular"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{ThemeResource TextSecondaryBrush}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1"
+                                                    Orientation="Horizontal"
+                                                    Spacing="4"
+                                                    VerticalAlignment="Center">
+                                            <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
+                                                    AutomationProperties.Name="show in file explorer"
+                                                    Click="CardOpenFolderButton_Click"
+                                                    ToolTipService.ToolTip="show in file explorer">
+                                                <Path Width="16" Height="16" Stretch="None"
+                                                      IsHitTestVisible="False"
+                                                      Stroke="{ThemeResource TextSecondaryBrush}"
+                                                      StrokeThickness="1.5"
+                                                      StrokeLineJoin="Round"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      VerticalAlignment="Center"
+                                                      Data="M 2,4.5 Q 2,3.5 3,3.5 H 6.5 L 8,5 H 13 Q 14,5 14,6 V 12.5 Q 14,13.5 13,13.5 H 3 Q 2,13.5 2,12.5 Z"/>
+                                            </Button>
+                                            <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
+                                                    AutomationProperties.Name="delete clip"
+                                                    Click="CardDeleteButton_Click"
+                                                    ToolTipService.ToolTip="delete clip">
+                                                <Path Width="16" Height="16" Stretch="None"
+                                                      IsHitTestVisible="False"
+                                                      Stroke="{ThemeResource TextSecondaryBrush}"
+                                                      StrokeThickness="1.5"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      VerticalAlignment="Center"
+                                                      Data="M 2.5,4.5 H 13.5 M 6,4.5 V 3 Q 6,2 7,2 H 9 Q 10,2 10,3 V 4.5 M 4,4.5 V 13 Q 4,14 5,14 H 11 Q 12,14 12,13 V 4.5 M 6.5,7 V 11.5 M 9.5,7 V 11.5"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
                                 </Grid>
                             </Border>
-
-                            <!-- Concise Save Flash Confirmation Border -->
-                            <Border x:Name="HeroSaveFlash"
-                                    CornerRadius="8"
-                                    BorderBrush="{ThemeResource AccentBrush}"
-                                    BorderThickness="1.5"
-                                    Opacity="0"
-                                    IsHitTestVisible="False"/>
-                        </Grid>
-
-                        <!-- 2. GALLERY SECTION -->
-                        <StackPanel x:Name="GallerySection" Spacing="12">
-
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock AutomationProperties.HeadingLevel="Level2"
-                                           Style="{StaticResource SectionTitle}" VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis" MaxLines="1">
-                                    <Run Text="gallery"/>
-                                    <Run Text="&#x2009;" FontSize="12"/>
-                                    <Run x:Name="GalleryCountText" Text="0 clips" FontSize="12" FontWeight="Normal"
-                                         Typography.NumeralAlignment="Tabular" Foreground="{ThemeResource TextTertiaryBrush}"/>
-                                </TextBlock>
-
-                                <Button FontFamily="Segoe UI" x:Name="OpenFolderButton"
-                                        Grid.Column="1"
-                                        Style="{StaticResource BaseButtonStyle}"
-                                        Height="32"
-                                        CornerRadius="4"
-                                        Padding="12,0"
-                                        Click="OpenReplaysFolderButton_Click"
-                                        ToolTipService.ToolTip="open replay folder">
-                                    <TextBlock x:Name="GalleryOpenFolderText"
-                                               Text="open folder"
-                                               Style="{StaticResource ToolbarLabel}"/>
-                                </Button>
-                            </Grid>
-
-                            <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                          VerticalScrollBarVisibility="Disabled">
-                                <StackPanel x:Name="CategoryFilterBar"
-                                            Orientation="Horizontal"
-                                            Spacing="8"/>
-                            </ScrollViewer>
-
-                            <!-- Clip Grid: 3 * 296 + 2 * 12 = 912px aligned cleanly under Hero -->
-                            <GridView x:Name="GalleryGrid"
-                                      Loaded="GalleryGrid_Loaded" SizeChanged="GalleryGrid_SizeChanged"
-                                      Margin="-6,0" Padding="0"
-                                      ItemContainerStyle="{StaticResource CleanGalleryGridViewItemStyle}"
-                                      SelectionMode="None"
-                                      IsItemClickEnabled="True"
-                                      ItemClick="GalleryGrid_ItemClick"
-                                      ScrollViewer.VerticalScrollMode="Disabled"
-                                      ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                                <GridView.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" ItemWidth="270" ItemHeight="220"/>
-                                    </ItemsPanelTemplate>
-                                </GridView.ItemsPanel>
-                                <GridView.ItemContainerTransitions>
-                                    <TransitionCollection/>
-                                </GridView.ItemContainerTransitions>
-                                <GridView.ItemTemplate>
-                                    <DataTemplate x:DataType="local:ReplayItem">
-                                        <Border x:Name="CardRoot"
-                                                CornerRadius="8"
-                                                Background="{ThemeResource SurfaceBrush}"
-                                                BorderBrush="{ThemeResource SurfaceBorderBrush}"
-                                                BorderThickness="1">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="60"/>
-                                                </Grid.RowDefinitions>
-                                                <Grid CornerRadius="7,7,0,0"
-                                                      Background="{ThemeResource SurfaceElevatedBrush}">
-                                                    <Path Width="24" Height="20" Stretch="Uniform"
-                                                          Stroke="{ThemeResource TextTertiaryBrush}"
-                                                          StrokeThickness="1.5"
-                                                          Opacity="0.32"
-                                                          HorizontalAlignment="Center"
-                                                          VerticalAlignment="Center"
-                                                          Data="M 2,3 H 18 C 19.1,3 20,3.9 20,5 V 15 C 20,16.1 19.1,17 18,17 H 2 C 0.9,17 0,16.1 0,15 V 5 C 0,3.9 0.9,3 2,3 Z M 8,7 L 13,10 L 8,13 Z"/>
-                                                    <Image Source="{x:Bind Thumbnail, Mode=OneWay}"
-                                                           Stretch="UniformToFill"/>
-
-                                                    <Rectangle Height="48"
-                                                               VerticalAlignment="Bottom"
-                                                               IsHitTestVisible="False"
-                                                               Fill="{ThemeResource MediaBottomScrimBrush}"/>
-                                                    <Rectangle x:Name="ThumbHoverScrim"
-                                                               IsHitTestVisible="False"
-                                                               Fill="{ThemeResource MediaHoverDimBrush}"
-                                                               Opacity="0"/>
-
-                                                    <Border x:Name="PlayOrb"
-                                                            Width="36"
-                                                            Height="36"
-                                                            CornerRadius="18"
-                                                            Background="{ThemeResource MediaOverlayChipBrush}"
-                                                            BorderBrush="{ThemeResource MediaOverlayChipBorderBrush}"
-                                                            BorderThickness="1"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center"
-                                                            Opacity="0.90">
-                                                        <Path Width="10" Height="12" Stretch="Uniform"
-                                                              Margin="2,0,0,0"
-                                                              Fill="{StaticResource MediaPillForegroundBrush}"
-                                                              Data="M 1,0.5 L 11,6.5 L 1,12.5 Z"/>
-                                                    </Border>
-
-                                                    <!-- Non-overlapping Top Badges -->
-                                                    <Grid Margin="8"
-                                                          ColumnSpacing="8"
-                                                          VerticalAlignment="Top">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-
-                                                        <Border Grid.Column="0"
-                                                                Style="{StaticResource MediaBadge}"
-                                                                HorizontalAlignment="Left"
-                                                                ToolTipService.ToolTip="{x:Bind Category}">
-                                                            <TextBlock Text="{x:Bind BadgeCategory}" Style="{StaticResource MediaBadgeLabel}"/>
-                                                        </Border>
-
-                                                        <Border Grid.Column="1"
-                                                                Style="{StaticResource MediaBadge}"
-                                                                HorizontalAlignment="Right">
-                                                            <TextBlock Text="{x:Bind TopRightBadgeText, Mode=OneWay}"
-                                                                       Style="{StaticResource MediaBadgeLabel}"/>
-                                                        </Border>
-                                                    </Grid>
-
-                                                    <!-- Duration Stamp -->
-                                                    <Border Style="{StaticResource MediaBadge}"
-                                                            Margin="8"
-                                                            HorizontalAlignment="Right"
-                                                            VerticalAlignment="Bottom">
-                                                        <TextBlock Text="{x:Bind DurationText, Mode=OneWay}"
-                                                                   Style="{StaticResource MediaBadgeLabel}"/>
-                                                    </Border>
-                                                </Grid>
-
-                                                <!-- Card Footer (timestamp + edit marker & resolution — never repeats badge label) -->
-                                                <Grid Grid.Row="1" Padding="12,8" ColumnSpacing="8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel VerticalAlignment="Center" Spacing="2">
-                                                        <TextBlock Text="{x:Bind CardTitleText, Mode=OneWay}"
-                                                                   FontSize="13"
-                                                                   FontWeight="Medium"
-                                                                   Typography.NumeralAlignment="Tabular"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                                        <TextBlock Text="{x:Bind ResolutionText, Mode=OneWay}"
-                                                                   FontSize="11.5"
-                                                                   Typography.NumeralAlignment="Tabular"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   Foreground="{ThemeResource TextSecondaryBrush}"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="1"
-                                                                Orientation="Horizontal"
-                                                                Spacing="4"
-                                                                VerticalAlignment="Center">
-                                                        <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
-                                                                AutomationProperties.Name="show in file explorer"
-                                                                Click="CardOpenFolderButton_Click"
-                                                                ToolTipService.ToolTip="show in file explorer">
-                                                            <Path Width="16" Height="16" Stretch="None"
-                                                                  IsHitTestVisible="False"
-                                                                  Stroke="{ThemeResource TextSecondaryBrush}"
-                                                                  StrokeThickness="1.5"
-                                                                  StrokeLineJoin="Round"
-                                                                  StrokeStartLineCap="Round"
-                                                                  StrokeEndLineCap="Round"
-                                                                  VerticalAlignment="Center"
-                                                                  Data="M 2,4.5 Q 2,3.5 3,3.5 H 6.5 L 8,5 H 13 Q 14,5 14,6 V 12.5 Q 14,13.5 13,13.5 H 3 Q 2,13.5 2,12.5 Z"/>
-                                                        </Button>
-                                                        <Button FontFamily="Segoe UI" Style="{StaticResource MediaCardActionButtonStyle}"
-                                                                AutomationProperties.Name="delete clip"
-                                                                Click="CardDeleteButton_Click"
-                                                                ToolTipService.ToolTip="delete clip">
-                                                            <Path Width="16" Height="16" Stretch="None"
-                                                                  IsHitTestVisible="False"
-                                                                  Stroke="{ThemeResource TextSecondaryBrush}"
-                                                                  StrokeThickness="1.5"
-                                                                  StrokeStartLineCap="Round"
-                                                                  StrokeEndLineCap="Round"
-                                                                  StrokeLineJoin="Round"
-                                                                  VerticalAlignment="Center"
-                                                                  Data="M 2.5,4.5 H 13.5 M 6,4.5 V 3 Q 6,2 7,2 H 9 Q 10,2 10,3 V 4.5 M 4,4.5 V 13 Q 4,14 5,14 H 11 Q 12,14 12,13 V 4.5 M 6.5,7 V 11.5 M 9.5,7 V 11.5"/>
-                                                        </Button>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </GridView.ItemTemplate>
-                            </GridView>
-
-                            <Border x:Name="GalleryEmptyState"
-                                    Visibility="Collapsed"
-                                    Style="{StaticResource Card}"
-                                    Padding="24,32">
-                                <StackPanel HorizontalAlignment="Center" Spacing="8">
-                                    <TextBlock Text="no replays yet"
-                                               FontSize="15"
-                                               FontWeight="SemiBold"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="EmptyGalleryHintText"
-                                               Text="press shift + s while recording to save your first clip."
-                                               Style="{StaticResource Mono}"
-                                               TextAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               MaxWidth="400"
-                                               HorizontalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-
-                    </StackPanel>
-                </Grid>
-            </ScrollViewer>
+                        </DataTemplate>
+                    </GridView.ItemTemplate>
+                </GridView>
+            </Grid>
 
             <!-- PAGE 2: SETTINGS (scrolls cleanly beneath full-width blurred header) -->
             <ScrollViewer x:Name="SettingsPage"
@@ -1236,7 +1233,7 @@
         <!-- ================================================================ -->
         <!-- TOP FULL-WIDTH HEADER BAR (solid surface, zero blur)             -->
         <!-- ================================================================ -->
-        <Grid x:Name="FloatingHeader" Grid.Row="0"
+        <Grid x:Name="FloatingHeader" Grid.Row="0" SizeChanged="RootGrid_SizeChanged"
               Height="52"
               Background="{ThemeResource HeaderBarBrush}"
               BorderBrush="{ThemeResource HairlineBrush}"
@@ -1270,6 +1267,7 @@
 
             <!-- Center: Horizontal Fluent 2.0 Selector Switcher -->
             <Border x:Name="NavSegmentedCapsule"
+                    SizeChanged="RootGrid_SizeChanged"
                     Grid.Column="1"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
@@ -1308,6 +1306,7 @@
 
             <!-- Right: Window Caption Buttons -->
             <StackPanel x:Name="WindowButtonsCapsule"
+                        SizeChanged="RootGrid_SizeChanged"
                         Grid.Column="2"
                         Orientation="Horizontal"
                         Spacing="4"

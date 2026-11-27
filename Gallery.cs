@@ -64,7 +64,7 @@ public sealed class ReplayItem : INotifyPropertyChanged
         {
             if (_sizeBytes == value) return;
             _sizeBytes = value;
-            Raise(nameof(SizeBytes), nameof(SizeText), nameof(TopRightBadgeText), nameof(MetaLineText));
+            Raise(nameof(SizeBytes), nameof(SizeText), nameof(MetaLineText));
         }
     }
 
@@ -108,7 +108,7 @@ public sealed class ReplayItem : INotifyPropertyChanged
         {
             if (Math.Abs(_fps - value) < 0.01) return;
             _fps = value;
-            Raise(nameof(Fps), nameof(FpsText), nameof(QualityText), nameof(TopRightBadgeText), nameof(MetaLineText));
+            Raise(nameof(Fps), nameof(FpsText), nameof(QualityText), nameof(BadgeFpsVisibility), nameof(MetaLineText));
         }
     }
 
@@ -135,7 +135,9 @@ public sealed class ReplayItem : INotifyPropertyChanged
 
     public string FpsText => Fps > 0 ? $"{Fps:0} fps" : "";
 
-    public string TopRightBadgeText => Fps > 0 ? $"{Fps:0} fps · {SizeText}" : SizeText;
+    public Microsoft.UI.Xaml.Visibility BadgeFpsVisibility => Fps > 0
+        ? Microsoft.UI.Xaml.Visibility.Visible
+        : Microsoft.UI.Xaml.Visibility.Collapsed;
 
     public string QualityText
     {
@@ -206,6 +208,7 @@ public sealed class ReplayLibrary
     private string _watchedDir = "";
     private string _activeFilter = "all";
     private readonly List<ReplayItem> _allItems = [];
+    private readonly SemaphoreSlim _previewSlots = new(3);
 
     public ReplayLibrary(DispatcherQueue dq)
     {
@@ -288,12 +291,13 @@ public sealed class ReplayLibrary
             if (!desiredSet.Contains(Items[i])) Items.RemoveAt(i);
         }
 
+        var visible = new HashSet<ReplayItem>(Items);
         for (int i = 0; i < desired.Count; i++)
         {
             var item = desired[i];
-            int current = Items.IndexOf(item);
-            if (current < 0) Items.Insert(Math.Min(i, Items.Count), item);
-            else if (current != i) Items.Move(current, i);
+            if (i < Items.Count && ReferenceEquals(Items[i], item)) continue;
+            if (visible.Add(item)) Items.Insert(i, item);
+            else Items.Move(Items.IndexOf(item), i);
         }
     }
 
@@ -341,7 +345,6 @@ public sealed class ReplayLibrary
         }
 
         SyncFilteredItems();
-        _ = EnsureAllAsync(_allItems.ToList());
     }
 
     private static List<ScanEntry> Scan(string dir)
@@ -412,11 +415,6 @@ public sealed class ReplayLibrary
             CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt) ? dt : null;
     }
 
-    private async Task EnsureAllAsync(List<ReplayItem> items)
-    {
-        foreach (ReplayItem item in items) await EnsureAsync(item);
-    }
-
     public Task EnsureAsync(ReplayItem item)
     {
         bool thumbOk = item.Thumbnail != null && File.Exists(item.ThumbPath);
@@ -428,9 +426,10 @@ public sealed class ReplayLibrary
         return task;
     }
 
-    private static async Task EnsureCoreAsync(ReplayItem item, bool thumbOk)
+    private async Task EnsureCoreAsync(ReplayItem item, bool thumbOk)
     {
         item.Busy = true;
+        await _previewSlots.WaitAsync();
         try
         {
             StorageFile file = await StorageFile.GetFileFromPathAsync(item.VideoPath);
@@ -443,6 +442,7 @@ public sealed class ReplayLibrary
         }
         finally
         {
+            _previewSlots.Release();
             item.Busy = false;
             item.EnsureTask = null;
         }

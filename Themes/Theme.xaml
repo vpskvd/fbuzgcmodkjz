@@ -4,6 +4,8 @@
 
     <!-- Shared neutral white foreground for dark video thumbnail stamps -->
     <SolidColorBrush x:Key="MediaPillForegroundBrush" Color="#EEF0F4"/>
+    <SolidColorBrush x:Key="MediaBadgeSurfaceBrush" Color="#EA20242D"/>
+    <SolidColorBrush x:Key="MediaBadgeEdgeBrush" Color="#26FFFFFF"/>
 
     <ResourceDictionary.ThemeDictionaries>
 

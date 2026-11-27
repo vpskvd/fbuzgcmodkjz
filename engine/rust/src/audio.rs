@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::{RingAudio, SharedState, SECOND_100NS};
 
@@ -718,7 +718,6 @@ fn find_matching_root_pids(target_apps: &[String]) -> Vec<u32> {
 struct AppAudioSlot {
     stop: Arc<AtomicBool>,
     alive: Arc<AtomicBool>,
-    pcm: Arc<Mutex<VecDeque<i16>>>,
     handle: Option<std::thread::JoinHandle<()>>,
 }
 
@@ -726,17 +725,15 @@ impl AppAudioSlot {
     fn spawn(shared: &Arc<SharedState>, pid: u32) -> Self {
         let stop = Arc::new(AtomicBool::new(false));
         let alive = Arc::new(AtomicBool::new(true));
-        let pcm = Arc::new(Mutex::new(VecDeque::with_capacity(OUT_RATE as usize / 2)));
         let s_shared = shared.clone();
         let s_stop = stop.clone();
         let s_alive = alive.clone();
-        let s_pcm = pcm.clone();
         let handle = std::thread::Builder::new()
             .name(format!("ir-app-aud-{pid}"))
             .spawn(move || unsafe {
                 let result = (|| -> Result<()> {
                     let _com = ComApartment::new()?;
-                    capture_process_pcm(&s_shared, &s_stop, &s_pcm, process_client(pid)?)
+                    capture_process_pcm(&s_shared, &s_stop, process_client(pid)?)
                 })();
                 if let Err(error) = result {
                     Sink::System.note_fail(&s_shared, error.code().0 as i64);
@@ -750,7 +747,6 @@ impl AppAudioSlot {
         Self {
             stop,
             alive,
-            pcm,
             handle,
         }
     }
@@ -766,7 +762,6 @@ impl AppAudioSlot {
 unsafe fn capture_process_pcm(
     shared: &Arc<SharedState>,
     stop: &AtomicBool,
-    pcm_out: &Arc<Mutex<VecDeque<i16>>>,
     client: IAudioClient,
 ) -> windows::core::Result<()> {
     let format = pcm_format(2);
@@ -781,28 +776,32 @@ unsafe fn capture_process_pcm(
     client.Start()?;
     let _stream = AudioStream(client);
 
-    const MAX_QUEUE_SAMPLES: usize = (OUT_RATE as usize) * 2 / 4;
+    let mut previous_end = 0;
     while shared.running.load(Ordering::Acquire) && !stop.load(Ordering::Acquire) {
         let _ = WaitForSingleObject(event.0, 50);
         while capture.GetNextPacketSize()? > 0 {
-            let (mut data, mut frames, mut flags, _) = (std::ptr::null_mut(), 0, 0, 0u64);
-            capture.GetBuffer(&mut data, &mut frames, &mut flags, None, None)?;
-            if frames > 0 && !shared.is_paused.load(Ordering::Acquire) {
-                let samples = (frames as usize) * 2;
-                let mut q = pcm_out.lock().unwrap_or_else(|e| e.into_inner());
-                if flags & AUDCLNT_BUFFERFLAGS_SILENT.0 as u32 != 0 || data.is_null() {
-                    q.extend(std::iter::repeat_n(0i16, samples));
-                } else {
-                    let bytes = std::slice::from_raw_parts(data, samples * 2);
-                    for pair in bytes.chunks_exact(2) {
-                        q.push_back(i16::from_le_bytes([pair[0], pair[1]]));
-                    }
-                }
-                while q.len() > MAX_QUEUE_SAMPLES {
-                    q.pop_front();
-                }
-            }
+            let (mut data, mut frames, mut flags, mut qpc) = (std::ptr::null_mut(), 0, 0, 0u64);
+            capture.GetBuffer(&mut data, &mut frames, &mut flags, None, Some(&mut qpc))?;
+            let duration = frames as i64 * SECOND_100NS / OUT_RATE as i64;
+            let time = if qpc == 0 || flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR.0 as u32 != 0 {
+                crate::qpc100ns().saturating_sub(duration)
+            } else {
+                qpc.min(i64::MAX as u64) as i64
+            }.max(previous_end);
+            previous_end = time.saturating_add(duration);
+            let pts = shared.capture_time(time);
+            let pcm = if pts.is_some() && frames > 0 && !data.is_null()
+                && flags & AUDCLNT_BUFFERFLAGS_SILENT.0 as u32 == 0
+            {
+                std::slice::from_raw_parts(data, frames as usize * 4).to_vec()
+            } else {
+                Vec::new()
+            };
             capture.ReleaseBuffer(frames)?;
+            Sink::System.note_event(shared);
+            if let Some(pts) = pts.filter(|_| !pcm.is_empty()) {
+                shared.store_system_audio(pcm, frames, pts);
+            }
         }
     }
     Ok(())
@@ -812,15 +811,11 @@ unsafe fn run_selected_apps(
     shared: &Arc<SharedState>,
     target_apps: &[String],
 ) -> windows::core::Result<()> {
-    const CHUNK_FRAMES: u32 = 960;
-    const CHUNK_SAMPLES: usize = (CHUNK_FRAMES as usize) * 2;
     let mut slots: HashMap<u32, AppAudioSlot> = HashMap::new();
-    let mut mix_acc = vec![0i32; CHUNK_SAMPLES];
-    let mut out_bytes = vec![0u8; CHUNK_SAMPLES * 2];
     let mut tick: u32 = 0;
 
     while shared.running.load(Ordering::Acquire) {
-        if tick % 75 == 0 {
+        if tick % 30 == 0 {
             let desired: HashSet<u32> = find_matching_root_pids(target_apps).into_iter().collect();
             let dead: Vec<u32> = slots
                 .iter()
@@ -840,37 +835,7 @@ unsafe fn run_selected_apps(
         }
         tick = tick.wrapping_add(1);
 
-        if shared.is_paused.load(Ordering::Acquire) {
-            for slot in slots.values() {
-                slot.pcm.lock().unwrap_or_else(|e| e.into_inner()).clear();
-            }
-            std::thread::sleep(std::time::Duration::from_millis(35));
-            continue;
-        }
-
-        std::thread::sleep(std::time::Duration::from_millis(20));
-        let Some(pts) = shared.capture_time(crate::qpc100ns()) else {
-            continue;
-        };
-
-        mix_acc.fill(0);
-        for slot in slots.values() {
-            let mut q = slot.pcm.lock().unwrap_or_else(|e| e.into_inner());
-            let avail = q.len().min(CHUNK_SAMPLES);
-            for (dst, sample) in mix_acc.iter_mut().take(avail).zip(q.drain(..avail)) {
-                *dst += sample as i32;
-            }
-        }
-
-        for (dst, &sum) in out_bytes.chunks_exact_mut(2).zip(mix_acc.iter()) {
-            let clamped = sum.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
-            let b = clamped.to_le_bytes();
-            dst[0] = b[0];
-            dst[1] = b[1];
-        }
-
-        shared.audio_events.fetch_add(1, Ordering::Relaxed);
-        shared.push_audio_at(&out_bytes, CHUNK_FRAMES, pts);
+        std::thread::sleep(std::time::Duration::from_millis(50));
     }
 
     for (_, mut s) in slots {

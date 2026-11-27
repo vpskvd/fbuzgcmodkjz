@@ -92,6 +92,7 @@ public partial class MainWindow : Window
     private DispatcherTimer? _infoBarTimer;
     private Storyboard? _infoBarMotion;
     private bool _galleryChangingFilter;
+    private bool _settingsControlsNeedSync;
     private ReplayItem? _viewerItem;
     private bool _galleryRefreshing;
     private bool _galleryRefreshAgain;
@@ -200,7 +201,8 @@ public partial class MainWindow : Window
             if (!_homeEntrancePlayed)
             {
                 _homeEntrancePlayed = true;
-                FadeIn(PagesHost, from: 0.84f, offset: 4);
+                RootGrid.XamlRoot.Changed += (_, _) => UpdateTitleBarDragRegions();
+                FadeIn(PagesHost, from: 0.90f, offset: 4, duration: 225);
                 UpdateHeroOrnament();
             }
         };
@@ -369,58 +371,48 @@ public partial class MainWindow : Window
 
     private void UpdateTitleBarDragRegions()
     {
+        if (_appWindow == null || RootGrid.XamlRoot is not { } root) return;
         try
         {
-            var tb = _appWindow.TitleBar;
-            if (tb == null || RootGrid.ActualWidth <= 0) return;
-
-            if (_isVideoFullscreen)
+            var input = Microsoft.UI.Input.InputNonClientPointerSource.GetForWindowId(_appWindow.Id);
+            if (input == null) return;
+            var caption = Microsoft.UI.Input.NonClientRegionKind.Caption;
+            var passthrough = Microsoft.UI.Input.NonClientRegionKind.Passthrough;
+            if (_isVideoFullscreen || NavSegmentedCapsule.ActualWidth <= 0 || WindowButtonsCapsule.ActualWidth <= 0)
             {
-                tb.SetDragRectangles(Array.Empty<RectInt32>());
+                SetRegions(caption, []);
+                SetRegions(passthrough, []);
                 return;
             }
 
-            double scale = Math.Max(1.0, GetDpiForWindow(_hwnd) / 96.0);
-            int headerHeightPx = (int)Math.Round(FloatingHeader.ActualHeight * scale);
-            int topStripPx = (int)Math.Round(8 * scale);
-            int winWidthPx = (int)Math.Round(RootGrid.ActualWidth * scale);
-
-            var rects = new List<RectInt32>();
-            if (topStripPx > 0 && winWidthPx > 0)
-                rects.Add(new RectInt32(0, 0, winWidthPx, topStripPx));
-
-            RectInt32 BoundsPx(FrameworkElement el)
+            double scale = root.RasterizationScale;
+            RectInt32 Bounds(FrameworkElement element)
             {
-                var pt = el.TransformToVisual(RootGrid).TransformPoint(new Windows.Foundation.Point(0, 0));
-                return new RectInt32(
-                    (int)Math.Floor(pt.X * scale),
-                    (int)Math.Floor(pt.Y * scale),
-                    (int)Math.Ceiling(el.ActualWidth * scale),
-                    (int)Math.Ceiling(el.ActualHeight * scale));
+                var bounds = element.TransformToVisual(RootGrid).TransformBounds(
+                    new Windows.Foundation.Rect(0, 0, element.ActualWidth, element.ActualHeight));
+                int left = (int)Math.Floor(bounds.Left * scale);
+                int top = (int)Math.Floor(bounds.Top * scale);
+                return new RectInt32(left, top, (int)Math.Ceiling(bounds.Right * scale) - left,
+                    (int)Math.Ceiling(bounds.Bottom * scale) - top);
             }
 
-            if (NavSegmentedCapsule.ActualWidth > 0 && WindowButtonsCapsule.ActualWidth > 0)
+            var navigation = Bounds(NavSegmentedCapsule);
+            var buttons = Bounds(WindowButtonsCapsule);
+            int height = (int)Math.Ceiling(FloatingHeader.ActualHeight * scale);
+            int navRight = navigation.X + navigation.Width;
+            SetRegions(passthrough, [navigation, buttons]);
+            SetRegions(caption,
+                [new RectInt32(0, 0, navigation.X, height), new RectInt32(navRight, 0, buttons.X - navRight, height)]);
+
+            void SetRegions(Microsoft.UI.Input.NonClientRegionKind kind, RectInt32[] regions)
             {
-                var n = BoundsPx(NavSegmentedCapsule);
-                var w = BoundsPx(WindowButtonsCapsule);
-
-                if (n.X > 4)
-                    rects.Add(new RectInt32(0, 0, n.X, headerHeightPx));
-
-                int rightGapW = Math.Max(0, w.X - (n.X + n.Width));
-                if (rightGapW > 4)
-                    rects.Add(new RectInt32(n.X + n.Width, 0, rightGapW, headerHeightPx));
+                var current = input.GetRegionRects(kind);
+                if (current == null || !current.SequenceEqual(regions))
+                    input.SetRegionRects(kind, regions);
             }
-            else if (winWidthPx > 0)
-            {
-                rects.Add(new RectInt32(0, 0, winWidthPx, headerHeightPx));
-            }
-
-            tb.SetDragRectangles(rects.ToArray());
         }
-        catch { }
+        catch (Exception ex) { Logger.Debug($"could not update title bar hit areas: {ex.Message}"); }
     }
-
     private void MinimizeTitleButton_Click(object sender, RoutedEventArgs e)
     {
         if (_appWindow.Presenter is OverlappedPresenter presenter) presenter.Minimize();
@@ -606,17 +598,16 @@ public partial class MainWindow : Window
         NavigateTo(target);
 
         if (_dirty && !settingsPage)
-            RevertPendingChanges();
+            RevertPendingChanges(deferControls: true);
 
         if (settingsPage)
         {
+            if (_settingsControlsNeedSync) SyncRevertedSettingsControls();
             RefreshStartupToggleState();
             UpdateMicLiveStatus();
             RefreshAudioAppsInBackground();
         }
 
-        if (!settingsPage)
-            _dq.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => _ = RefreshGalleryAsync());
     }
 
     private void UpdateNavPillVisual(bool animate)
@@ -629,7 +620,7 @@ public partial class MainWindow : Window
             var slide = visual.Compositor.CreateVector3KeyFrameAnimation();
             slide.InsertExpressionKeyFrame(0, "this.StartingValue");
             slide.InsertKeyFrame(1, target, visual.Compositor.CreateCubicBezierEasingFunction(new Vector2(0.22f, 1), new Vector2(0.36f, 1)));
-            slide.Duration = TimeSpan.FromMilliseconds(230);
+            slide.Duration = TimeSpan.FromMilliseconds(235);
             visual.StartAnimation("Translation", slide);
         }
         else if (!animate || target != _navPillPosition)
@@ -695,7 +686,7 @@ public partial class MainWindow : Window
 
         bool switchingTabs = !fadeOnly && oldPage != ViewerPage && newPage != ViewerPage;
         // Keep WebView2 stationary while its own content becomes ready.
-        FadeIn(newPage, from: 0.92f, offsetX: switchingTabs ? (IsSettingsActive ? 8 : -8) : 0, duration: 175);
+        FadeIn(newPage, from: 0.90f, offsetX: switchingTabs ? (IsSettingsActive ? 5 : -5) : 0, duration: 215);
     }
 
     private void Notify(string title, string message, int balloonIcon)
@@ -1132,7 +1123,6 @@ public partial class MainWindow : Window
             : $"{shown} of {total} clips";
 
         GalleryEmptyState.Visibility = total == 0 ? Visibility.Visible : Visibility.Collapsed;
-        GalleryGrid.Visibility = shown == 0 ? Visibility.Collapsed : Visibility.Visible;
         if (shown > 0) UpdateGalleryColumns();
         RebuildCategoryFilterPills();
     }
@@ -1167,7 +1157,9 @@ public partial class MainWindow : Window
             {
                 var btn = (Button)CategoryFilterBar.Children[i];
                 bool isSelected = string.Equals(filters[i].Name, active, StringComparison.OrdinalIgnoreCase);
-                btn.Style = isSelected ? activeStyle : baseStyle;
+                var style = isSelected ? activeStyle : baseStyle;
+                if (ReferenceEquals(btn.Style, style)) continue;
+                btn.Style = style;
                 if (btn.Content is TextBlock tb)
                     tb.FontWeight = isSelected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Medium;
             }
@@ -1208,8 +1200,8 @@ public partial class MainWindow : Window
         try { _library.SetFilter(filterName); }
         finally { _galleryChangingFilter = false; }
         UpdateGalleryChrome();
-        var result = GalleryGrid.Visibility == Visibility.Visible ? (FrameworkElement)GalleryGrid : GalleryEmptyState;
-        FadeIn(result, from: 0.88f, offset: 4, duration: 165);
+        if (GalleryGrid.ItemsPanelRoot is FrameworkElement items && _library.Items.Count > 0)
+            FadeIn(items, from: 0.82f, offset: 5, duration: 220);
     }
 
     private async Task RefreshGalleryAsync()
@@ -1233,16 +1225,19 @@ public partial class MainWindow : Window
 
     private void UpdateGalleryColumns()
     {
-        double width = GalleryGrid.ActualWidth;
+        double width = GalleryGrid.ActualWidth - GalleryGrid.Padding.Left - GalleryGrid.Padding.Right;
         if (width < 1 || GalleryGrid.ItemsPanelRoot is not ItemsWrapGrid panel) return;
         const int minimumSlotWidth = 260;
         const int slotPadding = 12;
         const int footerHeight = 60;
         int columns = Math.Clamp((int)(width / minimumSlotWidth), 1, 3);
         double slotWidth = Math.Floor(width / columns);
-        panel.MaximumRowsOrColumns = columns;
-        panel.ItemWidth = slotWidth;
-        panel.ItemHeight = Math.Round((slotWidth - slotPadding) * 9 / 16) + footerHeight + slotPadding;
+        if (panel.MaximumRowsOrColumns != columns) panel.MaximumRowsOrColumns = columns;
+        if (panel.ItemWidth != slotWidth)
+        {
+            panel.ItemWidth = slotWidth;
+            panel.ItemHeight = Math.Round((slotWidth - slotPadding) * 9 / 16) + footerHeight + slotPadding;
+        }
     }
 
     private void GalleryGrid_ItemClick(object sender, ItemClickEventArgs e)
@@ -1267,6 +1262,8 @@ public partial class MainWindow : Window
     {
         if (args.ItemContainer is not GridViewItem card) return;
         if (args.InRecycleQueue || args.Phase == 0) AnimateCardHover(card, hover: false, animate: false);
+        if (!args.InRecycleQueue && args.Phase == 0) args.RegisterUpdateCallback(GalleryGrid_ContainerContentChanging);
+        if (!args.InRecycleQueue && args.Phase == 1 && args.Item is ReplayItem item) _ = _library.EnsureAsync(item);
         if (args.InRecycleQueue || !_hoverWired.TryAdd(card, new object())) return;
         card.PointerEntered += (_, _) => AnimateCardHover(card, true);
         card.PointerExited += (_, _) => AnimateCardHover(card, false);
@@ -1278,10 +1275,10 @@ public partial class MainWindow : Window
         try
         {
             if (FindVisualChildByName<Microsoft.UI.Xaml.Shapes.Rectangle>(card, "ThumbHoverScrim") is { } scrim)
-                AnimateDouble(scrim, UIElement.OpacityProperty, hover ? 1.0 : 0.0, animate ? 155 : 0);
+                AnimateDouble(scrim, UIElement.OpacityProperty, hover ? 1.0 : 0.0, animate ? 185 : 0);
 
             if (FindVisualChildByName<Border>(card, "PlayOrb") is { } playOrb)
-                AnimateDouble(playOrb, UIElement.OpacityProperty, hover ? 1.0 : 0.90, animate ? 155 : 0);
+                AnimateDouble(playOrb, UIElement.OpacityProperty, hover ? 1.0 : 0.90, animate ? 185 : 0);
 
             if (FindVisualChildByName<Border>(card, "CardRoot") is { } rootBorder)
                 rootBorder.BorderBrush = hover ? GetThemedBrush("ControlElevationBorderBrush") : GetThemedBrush("SurfaceBorderBrush");
@@ -2363,10 +2360,10 @@ public partial class MainWindow : Window
         DurationCustomContent.Opacity = fromOpacity;
         DurationCustomWrap.Visibility = Visibility.Visible;
         bool resize = Math.Abs(end - from) >= 0.5;
-        double fadeMs = show ? 155 : fromOpacity > 0.01 ? 85 : 0;
-        double resizeMs = resize ? Math.Max(115, 225 * Math.Abs(end - from) / customSlot) : 0;
+        double fadeMs = show ? 170 : fromOpacity > 0.01 ? 90 : 0;
+        double resizeMs = resize ? Math.Max(120, 225 * Math.Abs(end - from) / customSlot) : 0;
         var transition = new Storyboard();
-        if (resize) AddMotion(transition, DurationCustomWrap, "Width", from, end, show ? 0 : fadeMs, resizeMs, layout: true);
+        if (resize) AddMotion(transition, DurationCustomWrap, "Width", from, end, 0, resizeMs, layout: true);
         else DurationCustomWrap.Width = end;
         if (fadeMs > 0) AddMotion(transition, DurationCustomContent, "Opacity", fromOpacity, show ? 1 : 0, 0, fadeMs);
         else DurationCustomContent.Opacity = 0;
@@ -2501,7 +2498,7 @@ public partial class MainWindow : Window
         panel.Height = from;
         panel.Opacity = fromOpacity;
         double remaining = Math.Abs(targetHeight - from) / Math.Max(1, naturalHeight);
-        double duration = Math.Clamp((show ? 285 : 245) * remaining, 105, 280);
+        double duration = Math.Clamp((show ? 265 : 230) * remaining, 110, 265);
         var storyboard = new Storyboard();
         AddMotion(storyboard, panel, "Height", from, targetHeight, 0, duration, layout: true);
         AddMotion(storyboard, panel, "Opacity", fromOpacity, show ? 1 : 0, 0, duration * 0.85);
@@ -3267,18 +3264,18 @@ public partial class MainWindow : Window
         {
             bool wasVisible = PendingChangesFlyout.Visibility == Visibility.Visible;
             PendingChangesFlyout.Visibility = Visibility.Visible;
-            AnimateDouble(PendingChangesFlyout, UIElement.OpacityProperty, 1, 170, from: wasVisible ? null : 0);
+            AnimateDouble(PendingChangesFlyout, UIElement.OpacityProperty, 1, 190, from: wasVisible ? null : 0);
         }
         else
         {
-            AnimateDouble(PendingChangesFlyout, UIElement.OpacityProperty, 0, 140, completed: () =>
+            AnimateDouble(PendingChangesFlyout, UIElement.OpacityProperty, 0, 155, completed: () =>
             {
                 if (!_dirty) PendingChangesFlyout.Visibility = Visibility.Collapsed;
             });
         }
     }
 
-    private void RevertPendingChanges()
+    private void RevertPendingChanges(bool deferControls = false)
     {
         PendingSettings prev = _baseline;
         _settings.ReplayDurationSeconds = prev.ReplayDurationSeconds;
@@ -3302,6 +3299,14 @@ public partial class MainWindow : Window
             .ToList();
         _settings.RecordMicrophone = prev.RecordMicrophone;
 
+        if (deferControls) _settingsControlsNeedSync = true;
+        else SyncRevertedSettingsControls();
+        CheckDirty();
+    }
+
+    private void SyncRevertedSettingsControls()
+    {
+        _settingsControlsNeedSync = false;
         bool wasInit = _initializing;
         _initializing = true;
         try
@@ -3328,7 +3333,6 @@ public partial class MainWindow : Window
             InitCaptureTargets();
         }
         finally { _initializing = wasInit; }
-        CheckDirty();
     }
 
     private async void PendingSaveButton_Click(object sender, RoutedEventArgs e) => await SaveChangesAsync();
@@ -3448,7 +3452,7 @@ public partial class MainWindow : Window
         }
 
         var story = new Storyboard();
-        int duration = show ? 180 : 145;
+        int duration = show ? 200 : 160;
         double initialOpacity = show && !wasMoving ? (replace ? 0.84 : 0) : opacity;
         double initialOffset = show && !wasMoving ? (replace ? 3 : 8) : offset;
         AddMotion(story, StatusInfoBar, "Opacity", initialOpacity, StatusInfoBar.Opacity, 0, duration);

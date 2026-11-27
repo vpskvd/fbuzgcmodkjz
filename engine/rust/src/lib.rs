@@ -348,19 +348,25 @@ impl SharedState {
             *next = pts.saturating_add(duration);
             pts
         };
+        self.store_system_audio(data.to_vec(), frames, pts);
+    }
+
+    // Process loopback workers share a clock, but packets can arrive in a
+    // different order. Keep overlapping sources at their original times.
+    fn store_system_audio(&self, data: Vec<u8>, frames: u32, pts: i64) {
+        let bytes = data.len() as i64;
+        self.sys_peak.fetch_max(peak_i16(&data, 4), Ordering::Relaxed);
         let mut ring = self.aring.lock().unwrap_or_else(|e| e.into_inner());
-        ring.push(RingAudio {
-            data: data.to_vec(),
-            frames,
-            pts100ns: pts,
-        });
+        let index = ring.partition_point(|packet| packet.pts100ns <= pts);
+        ring.insert(
+            index,
+            RingAudio { data, frames, pts100ns: pts },
+        );
         self.aring_bytes
-            .fetch_add(data.len() as i64, Ordering::Relaxed);
+            .fetch_add(bytes, Ordering::Relaxed);
         self.audio_frames
             .fetch_add(frames as i64, Ordering::Relaxed);
         self.audio_got_frames.store(1, Ordering::Relaxed);
-        self.sys_peak
-            .fetch_max(peak_i16(data, 4), Ordering::Relaxed);
         let secs = self.ring_seconds.load(Ordering::Relaxed);
         trim_audio_ring(&mut ring, &self.aring_bytes, secs);
     }
@@ -2074,6 +2080,31 @@ mod pause_tests {
         assert_eq!(state.capture_time(999), None);
         assert_eq!(state.capture_time(1100), Some(100));
     }
+    #[test]
+    fn selected_app_packets_mix_by_capture_time_even_when_arrival_order_differs() {
+        let state = SharedState::new();
+        state.ring_seconds.store(10, Ordering::Relaxed);
+        let stereo = |sample: i16| {
+            let [lo, hi] = sample.to_le_bytes();
+            [lo, hi, lo, hi].repeat(480)
+        };
+        state.store_system_audio(stereo(1000), 480, 1_050_000);
+        state.store_system_audio(stereo(600), 480, 1_000_000);
+
+        let ring = state.aring.lock().unwrap();
+        assert_eq!(ring[0].pts100ns, 1_000_000);
+        assert_eq!(ring[1].pts100ns, 1_050_000);
+        let mixed = audio::mix(&ring, &[], 48_000);
+        assert_eq!(mixed[0].pts100ns, 1_000_000);
+        let samples: Vec<_> = mixed.iter().flat_map(|packet| packet.data.chunks_exact(4))
+            .map(|frame| i16::from_le_bytes([frame[0], frame[1]]))
+            .collect();
+        assert_eq!(samples.len(), 720);
+        assert_eq!(samples[0], 600);
+        assert_eq!(samples[240], 1600);
+        assert_eq!(samples[480], 1000);
+    }
+
     #[test]
     fn microphone_keeps_its_timeline_while_game_audio_and_video_pause() {
         let state = SharedState::new();

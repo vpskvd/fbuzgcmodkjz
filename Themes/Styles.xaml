@@ -74,16 +74,15 @@
     </Style>
 
     <Style x:Key="MediaBadge" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource MediaOverlayChipBrush}"/>
-        <Setter Property="BorderBrush" Value="{ThemeResource MediaOverlayChipBorderBrush}"/>
+        <Setter Property="Background" Value="{StaticResource MediaBadgeSurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource MediaBadgeEdgeBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="CornerRadius" Value="5"/>
         <Setter Property="MinHeight" Value="24"/>
         <Setter Property="Padding" Value="8,0"/>
     </Style>
 
     <Style x:Key="MediaBadgeLabel" TargetType="TextBlock" BasedOn="{StaticResource CenteredCaption}">
-        <Setter Property="FontSize" Value="11"/>
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Foreground" Value="{StaticResource MediaPillForegroundBrush}"/>
         <Setter Property="MaxLines" Value="1"/>
@@ -118,28 +117,28 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -198,28 +197,28 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -292,28 +291,28 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -367,7 +366,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Grid x:Name="RootGrid">
+                    <Grid Background="{TemplateBinding Background}">
                         <Border x:Name="BaseBorder"
                                 Background="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}"
                                 BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"
@@ -405,19 +404,19 @@
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.17" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
+                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" EasingFunction="{StaticResource ControlOpacityEase}"/>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
