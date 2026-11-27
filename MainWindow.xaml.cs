@@ -1219,9 +1219,9 @@ public partial class MainWindow : Window
             var label = new TextBlock
             {
                 Text = f.Label,
+                Style = (Style)Application.Current.Resources["CenteredLabel"],
                 FontSize = 12,
                 FontWeight = isSelected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Medium,
-                VerticalAlignment = VerticalAlignment.Center,
             };
             Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(label, FontNumeralAlignment.Tabular);
             var btn = new Button

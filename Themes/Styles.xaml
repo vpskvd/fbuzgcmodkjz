@@ -64,10 +64,20 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
-    <Style x:Key="ToolbarLabel" TargetType="TextBlock">
+    <Style x:Key="CenteredLabel" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="0,0,0,3"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ToolbarLabel" TargetType="TextBlock" BasedOn="{StaticResource CenteredLabel}">
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <Style x:Key="CenteredCaption" TargetType="TextBlock" BasedOn="{StaticResource CenteredLabel}">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}"/>
     </Style>
 
     <Style x:Key="MediaBadge" TargetType="Border">
@@ -79,11 +89,10 @@
         <Setter Property="Padding" Value="7,1"/>
     </Style>
 
-    <Style x:Key="MediaBadgeLabel" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
+    <Style x:Key="MediaBadgeLabel" TargetType="TextBlock" BasedOn="{StaticResource CenteredCaption}">
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Foreground" Value="{StaticResource MediaPillForegroundBrush}"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="MaxLines" Value="1"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
     </Style>
@@ -622,10 +631,10 @@
                             <ColumnDefinition Width="248"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{TemplateBinding Label}"
+                                   Style="{StaticResource CenteredLabel}"
                                    FontSize="14"
                                    FontWeight="Normal"
                                    Foreground="{ThemeResource TextPrimaryBrush}"
-                                   VerticalAlignment="Center"
                                    TextWrapping="Wrap"/>
                         <ContentPresenter Grid.Column="1"
                                           VerticalAlignment="Center"

@@ -29,12 +29,21 @@ const icWaveLow = document.getElementById("icWaveLow");
 const icWaveHigh = document.getElementById("icWaveHigh");
 const icMuted = document.getElementById("icMuted");
 const vol = document.getElementById("vol");
+const speed = document.getElementById("speed");
 const fsBtn = document.getElementById("fs");
 const icExpand = document.getElementById("icExpand");
 const icCompress = document.getElementById("icCompress");
 const cropLayer = document.getElementById("cropLayer");
 const cropBox = document.getElementById("cropBox");
 const cropTag = document.getElementById("cropTag");
+
+function setPlaybackSpeed(rate) {
+  v.defaultPlaybackRate = rate;
+  v.playbackRate = rate;
+  speed.value = String(rate);
+}
+
+speed.addEventListener("change", () => setPlaybackSpeed(Number(speed.value)));
 
 let scrubbing = false;
 let mutedByUser = null;
@@ -416,6 +425,7 @@ function toggleFullscreen() {
 }
 
 document.addEventListener("keydown", (e) => {
+  if (e.target === speed) return;
   if (e.key === "Escape") {
     e.preventDefault();
     post({ type: "close" });
@@ -558,6 +568,7 @@ window.receiveCommand = function (cmd) {
         dur.textContent = "0:00";
         updateSeekFill();
         if (typeof cmd.src === "string" && cmd.src.length > 0) {
+          setPlaybackSpeed(1);
           v.src = cmd.src;
           if (Number.isFinite(cmd.v)) { v.volume = Math.max(0, Math.min(1, cmd.v)); vol.value = v.volume; }
           if (typeof cmd.m === "boolean") { v.muted = cmd.m; mutedByUser = cmd.m; }
