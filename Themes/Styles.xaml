@@ -53,6 +53,41 @@
         <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}"/>
     </Style>
 
+    <Style x:Key="ToolbarIcon" TargetType="Path">
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="Stretch" Value="None"/>
+        <Setter Property="StrokeThickness" Value="1.5"/>
+        <Setter Property="StrokeLineJoin" Value="Round"/>
+        <Setter Property="StrokeStartLineCap" Value="Round"/>
+        <Setter Property="StrokeEndLineCap" Value="Round"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ToolbarLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="MediaBadge" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource MediaOverlayChipBrush}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource MediaOverlayChipBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="MinHeight" Value="22"/>
+        <Setter Property="Padding" Value="7,1"/>
+    </Style>
+
+    <Style x:Key="MediaBadgeLabel" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Foreground" Value="{StaticResource MediaPillForegroundBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="MaxLines" Value="1"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
     <!-- ================================================================== -->
     <!-- FLUENT 2.0 BUTTONS (non-sticky overlay layers, explicit Normal reset)-->
     <!-- ================================================================== -->

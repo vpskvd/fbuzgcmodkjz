@@ -46,23 +46,22 @@
                                     </Border>
 
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                        <Grid ColumnSpacing="12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="instant replay" Style="{StaticResource DisplayTitle}"
-                                                       AutomationProperties.HeadingLevel="Level1" VerticalAlignment="Center"/>
-                                            <TextBlock x:Name="HeroBufferText" Grid.Column="1" Text="0 s / 60 s"
-                                                       Style="{StaticResource Mono}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                        </Grid>
+                                        <TextBlock Style="{StaticResource DisplayTitle}"
+                                                   TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                   AutomationProperties.HeadingLevel="Level1">
+                                            <Run Text="instant replay"/>
+                                            <Run Text="&#x2009;" FontSize="12"/>
+                                            <Run x:Name="HeroBufferText" Text="0 s / 60 s" FontSize="12" FontWeight="Normal"
+                                                 Typography.NumeralAlignment="Tabular" Foreground="{ThemeResource TextSecondaryBrush}"/>
+                                        </TextBlock>
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <Border Background="{ThemeResource KeycapBgBrush}" BorderBrush="{ThemeResource KeycapBorderBrush}"
-                                                    BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    BorderThickness="1" CornerRadius="4" Padding="6,0" MinHeight="20"
+                                                    VerticalAlignment="Center">
                                                 <TextBlock x:Name="HeroHotkeyText" Text="shift + s" Style="{StaticResource Mono}"
                                                            Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                             </Border>
@@ -80,19 +79,13 @@
                                                 Click="SaveReplayButton_Click"
                                                 ToolTipService.ToolTip="save buffered replay now">
                                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                <Path Width="14" Height="14" Stretch="Uniform"
+                                                <Path Style="{StaticResource ToolbarIcon}"
                                                       Stroke="{Binding Foreground, ElementName=SaveReplayButton}"
-                                                      StrokeThickness="1.6"
-                                                      StrokeLineJoin="Round"
-                                                      StrokeStartLineCap="Round"
-                                                      StrokeEndLineCap="Round"
-                                                      VerticalAlignment="Center"
-                                                      Data="M 5.5,3.5 H 18.5 A 1.5,1.5 0 0 1 20,5 V 20.5 L 12,15.8 L 4,20.5 V 5 A 1.5,1.5 0 0 1 5.5,3.5 Z"/>
+                                                      Data="M 3,3.5 Q 3,2 4.5,2 H 11.5 Q 13,2 13,3.5 V 14 L 8,11 L 3,14 Z"/>
                                                 <TextBlock x:Name="SaveReplayLabel"
                                                            Text="save replay"
-                                                           FontSize="13"
-                                                           FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"/>
+                                                           Style="{StaticResource ToolbarLabel}"
+                                                           FontWeight="SemiBold"/>
                                             </StackPanel>
                                         </Button>
 
@@ -102,19 +95,13 @@
                                                 MinWidth="132"
                                                 Click="StartStopButton_Click">
                                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                <Path Width="13" Height="13" Stretch="Uniform"
+                                                <Path Style="{StaticResource ToolbarIcon}"
                                                       Stroke="{Binding Foreground, ElementName=StartReplayButton}"
-                                                      StrokeThickness="1.6"
-                                                      StrokeLineJoin="Round"
-                                                      StrokeStartLineCap="Round"
-                                                      StrokeEndLineCap="Round"
-                                                      VerticalAlignment="Center"
-                                                      Data="M 7,5 L 19,12 L 7,19 Z"/>
+                                                      Data="M 4,2.5 L 13,8 L 4,13.5 Z"/>
                                                 <TextBlock x:Name="StartReplayText"
                                                            Text="start replay"
-                                                           FontSize="13"
-                                                           FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"/>
+                                                           Style="{StaticResource ToolbarLabel}"
+                                                           FontWeight="SemiBold"/>
                                             </StackPanel>
                                         </Button>
 
@@ -122,22 +109,16 @@
                                                 AutomationProperties.Name="stop"
                                                 Visibility="Collapsed"
                                                 Style="{StaticResource DangerButtonStyle}"
-                                                MinWidth="96"
+                                                MinWidth="120"
                                                 Click="StartStopButton_Click">
                                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                <Path Width="13" Height="13" Stretch="Uniform"
+                                                <Path Style="{StaticResource ToolbarIcon}"
                                                       Stroke="{Binding Foreground, ElementName=StopReplayButton}"
-                                                      StrokeThickness="1.6"
-                                                      StrokeLineJoin="Round"
-                                                      StrokeStartLineCap="Round"
-                                                      StrokeEndLineCap="Round"
-                                                      VerticalAlignment="Center"
-                                                      Data="M 6,4 H 18 A 2,2 0 0 1 20,6 V 18 A 2,2 0 0 1 18,20 H 6 A 2,2 0 0 1 4,18 V 6 A 2,2 0 0 1 6,4 Z"/>
+                                                      Data="M 4,2.5 H 12 Q 13.5,2.5 13.5,4 V 12 Q 13.5,13.5 12,13.5 H 4 Q 2.5,13.5 2.5,12 V 4 Q 2.5,2.5 4,2.5 Z"/>
                                                 <TextBlock x:Name="StopReplayText"
                                                            Text="stop"
-                                                           FontSize="13"
-                                                           FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"/>
+                                                           Style="{StaticResource ToolbarLabel}"
+                                                           FontWeight="SemiBold"/>
                                             </StackPanel>
                                         </Button>
                                     </StackPanel>
@@ -180,6 +161,10 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
 
                                         <Path Width="16" Height="16" Stretch="Uniform"
                                               Stroke="{ThemeResource TextTertiaryBrush}"
@@ -190,25 +175,21 @@
                                               VerticalAlignment="Center"
                                               Data="M 7,7 H 17 V 17 H 7 Z M 9.5,2 V 5 M 14.5,2 V 5 M 9.5,19 V 22 M 14.5,19 V 22 M 2,9.5 H 5 M 2,14.5 H 5 M 19,9.5 H 22 M 19,14.5 H 22 M 5,6.5 A 1.5,1.5 0 0 1 6.5,5 H 17.5 A 1.5,1.5 0 0 1 19,6.5 V 17.5 A 1.5,1.5 0 0 1 17.5,19 H 6.5 A 1.5,1.5 0 0 1 5,17.5 Z"/>
 
-                                        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                            <TextBlock Text="cpu usage"
-                                                       FontSize="13"
-                                                       FontWeight="Medium"
-                                                       Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                            <TextBlock x:Name="CpuHintText"
-                                                       Text="overall processor load"
-                                                       FontSize="11"
-                                                       Foreground="{ThemeResource TextTertiaryBrush}"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="cpu usage"
+                                                   Style="{StaticResource ToolbarLabel}" FontWeight="Medium"
+                                                   Foreground="{ThemeResource TextPrimaryBrush}"/>
+                                        <TextBlock x:Name="CpuHintText" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2"
+                                                   Text="overall processor load"
+                                                   FontSize="11"
+                                                   Foreground="{ThemeResource TextTertiaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
 
                                         <TextBlock x:Name="CpuValueText"
                                                    Grid.Column="2"
                                                    Text="—"
-                                                   FontSize="15"
+                                                   Style="{StaticResource ToolbarLabel}"
                                                    FontWeight="SemiBold"
                                                    Typography.NumeralAlignment="Tabular"
-                                                   VerticalAlignment="Center"
                                                    Foreground="{ThemeResource TextPrimaryBrush}"/>
                                     </Grid>
 
@@ -249,6 +230,10 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
 
                                         <Path Width="16" Height="16" Stretch="Uniform"
                                               Stroke="{ThemeResource TextTertiaryBrush}"
@@ -259,26 +244,22 @@
                                               VerticalAlignment="Center"
                                               Data="M 3,6.5 H 21 A 1.5,1.5 0 0 1 22.5,8 V 14.5 A 1.5,1.5 0 0 1 21,16 H 3 A 1.5,1.5 0 0 1 1.5,14.5 V 8 A 1.5,1.5 0 0 1 3,6.5 Z M 7,10 V 12.5 M 12,10 V 12.5 M 17,10 V 12.5 M 6,16 V 19.5 M 10,16 V 19.5 M 14,16 V 19.5 M 18,16 V 19.5"/>
 
-                                        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                            <TextBlock Text="system memory"
-                                                       FontSize="13"
-                                                       FontWeight="Medium"
-                                                       Foreground="{ThemeResource TextPrimaryBrush}"/>
-                                            <TextBlock x:Name="RamHintText"
-                                                       Text="in use"
-                                                       FontSize="11"
-                                                       Typography.NumeralAlignment="Tabular"
-                                                       Foreground="{ThemeResource TextTertiaryBrush}"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="system memory"
+                                                   Style="{StaticResource ToolbarLabel}" FontWeight="Medium"
+                                                   Foreground="{ThemeResource TextPrimaryBrush}"/>
+                                        <TextBlock x:Name="RamHintText" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2"
+                                                   Text="in use"
+                                                   FontSize="11"
+                                                   Typography.NumeralAlignment="Tabular"
+                                                   Foreground="{ThemeResource TextTertiaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
 
                                         <TextBlock x:Name="RamValueText"
                                                    Grid.Column="2"
                                                    Text="—"
-                                                   FontSize="15"
+                                                   Style="{StaticResource ToolbarLabel}"
                                                    FontWeight="SemiBold"
                                                    Typography.NumeralAlignment="Tabular"
-                                                   VerticalAlignment="Center"
                                                    Foreground="{ThemeResource TextPrimaryBrush}"/>
                                     </Grid>
 
@@ -309,17 +290,14 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                    <TextBlock Text="gallery" AutomationProperties.HeadingLevel="Level2"
-                                               Style="{StaticResource SectionTitle}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="GalleryCountText"
-                                               Text="0 clips"
-                                               Style="{StaticResource Mono}"
-                                               FontSize="12"
-                                               Foreground="{ThemeResource TextTertiaryBrush}"
-                                               VerticalAlignment="Center"/>
-                                </StackPanel>
+                                <TextBlock AutomationProperties.HeadingLevel="Level2"
+                                           Style="{StaticResource SectionTitle}" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" MaxLines="1">
+                                    <Run Text="gallery"/>
+                                    <Run Text="&#x2009;" FontSize="12"/>
+                                    <Run x:Name="GalleryCountText" Text="0 clips" FontSize="12" FontWeight="Normal"
+                                         Typography.NumeralAlignment="Tabular" Foreground="{ThemeResource TextTertiaryBrush}"/>
+                                </TextBlock>
 
                                 <Button FontFamily="Segoe UI" x:Name="OpenFolderButton"
                                         Grid.Column="1"
@@ -330,18 +308,12 @@
                                         Click="OpenReplaysFolderButton_Click"
                                         ToolTipService.ToolTip="open replay folder">
                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <Path Width="14" Height="14" Stretch="Uniform"
+                                        <Path Style="{StaticResource ToolbarIcon}"
                                               Stroke="{Binding Foreground, ElementName=OpenFolderButton}"
-                                              StrokeThickness="1.5"
-                                              StrokeLineJoin="Round"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              VerticalAlignment="Center"
-                                              Data="M 3,6.5 A 1.5,1.5 0 0 1 4.5,5 H 9.5 L 11.5,7.5 H 19.5 A 1.5,1.5 0 0 1 21,9 V 18 A 1.5,1.5 0 0 1 19.5,19.5 H 4.5 A 1.5,1.5 0 0 1 3,18 Z"/>
+                                              Data="M 2,4.5 Q 2,3.5 3,3.5 H 6.5 L 8,5 H 13 Q 14,5 14,6 V 11.5 Q 14,12.5 13,12.5 H 3 Q 2,12.5 2,11.5 Z"/>
                                         <TextBlock x:Name="GalleryOpenFolderText"
                                                    Text="open folder"
-                                                   FontSize="13"
-                                                   VerticalAlignment="Center"/>
+                                                   Style="{StaticResource ToolbarLabel}"/>
                                     </StackPanel>
                                 </Button>
                             </Grid>
@@ -430,14 +402,8 @@
                                                         </Grid.ColumnDefinitions>
 
                                                         <Border Grid.Column="0"
-                                                                Background="{ThemeResource MediaOverlayChipBrush}"
-                                                                BorderBrush="{ThemeResource MediaOverlayChipBorderBrush}"
-                                                                BorderThickness="1"
-                                                                CornerRadius="4"
-                                                                Height="22"
-                                                                Padding="6,0"
+                                                                Style="{StaticResource MediaBadge}"
                                                                 HorizontalAlignment="Left"
-                                                                VerticalAlignment="Center"
                                                                 ToolTipService.ToolTip="{x:Bind Category}">
                                                             <Grid ColumnSpacing="6" VerticalAlignment="Center">
                                                                 <Grid.ColumnDefinitions>
@@ -464,49 +430,25 @@
                                                                       Data="M 6,12 H 10 M 8,10 V 14 M 15.2,13.2 H 15.3 M 17.8,10.8 H 17.9 M 5.5,6 H 18.5 C 20.8,6 22,8.5 22,12 C 22,16.2 20,18.5 17.8,18.5 C 16.3,18.5 15.3,17.2 14,15.8 H 10 C 8.7,17.2 7.7,18.5 6.2,18.5 C 4,18.5 2,16.2 2,12 C 2,8.5 3.2,6 5.5,6 Z"/>
                                                                 <TextBlock Grid.Column="1"
                                                                            Text="{x:Bind BadgeCategory}"
-                                                                           FontSize="11"
-                                                                           FontWeight="Medium"
-                                                                           MaxLines="1"
-                                                                           TextTrimming="CharacterEllipsis"
-                                                                           Foreground="{StaticResource MediaPillForegroundBrush}"
-                                                                           VerticalAlignment="Center"/>
+                                                                           Style="{StaticResource MediaBadgeLabel}"/>
                                                             </Grid>
                                                         </Border>
 
                                                         <Border Grid.Column="1"
-                                                                Background="{ThemeResource MediaOverlayChipBrush}"
-                                                                BorderBrush="{ThemeResource MediaOverlayChipBorderBrush}"
-                                                                BorderThickness="1"
-                                                                CornerRadius="4"
-                                                                Height="22"
-                                                                Padding="7,0"
-                                                                HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center">
+                                                                Style="{StaticResource MediaBadge}"
+                                                                HorizontalAlignment="Right">
                                                             <TextBlock Text="{x:Bind TopRightBadgeText, Mode=OneWay}"
-                                                                       Style="{StaticResource Mono}"
-                                                                       FontSize="11"
-                                                                       FontWeight="Medium"
-                                                                       VerticalAlignment="Center"
-                                                                       Foreground="{StaticResource MediaPillForegroundBrush}"/>
+                                                                       Style="{StaticResource MediaBadgeLabel}"/>
                                                         </Border>
                                                     </Grid>
 
                                                     <!-- Duration Stamp -->
-                                                    <Border Background="{ThemeResource MediaOverlayChipBrush}"
-                                                            BorderBrush="{ThemeResource MediaOverlayChipBorderBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="4"
-                                                            Height="22"
-                                                            Padding="7,0"
+                                                    <Border Style="{StaticResource MediaBadge}"
                                                             Margin="8"
                                                             HorizontalAlignment="Right"
                                                             VerticalAlignment="Bottom">
                                                         <TextBlock Text="{x:Bind DurationText, Mode=OneWay}"
-                                                                   Style="{StaticResource Mono}"
-                                                                   FontSize="11"
-                                                                   FontWeight="Medium"
-                                                                   VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource MediaPillForegroundBrush}"/>
+                                                                   Style="{StaticResource MediaBadgeLabel}"/>
                                                     </Border>
                                                 </Grid>
 
