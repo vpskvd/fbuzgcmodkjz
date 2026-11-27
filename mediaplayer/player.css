@@ -6,24 +6,13 @@
   --motion-panel: 200ms;
   --bar-h: 44px;
   --bar-inset: 16px;
-  --speed-surface: #1b1e25;
-  --speed-control: #20242d;
-  --speed-border: #ffffff22;
+  --bar-surface: rgba(22, 25, 31, 0.94);
+  --bar-border: rgba(255, 255, 255, 0.14);
   --speed-text: #f0f2f6;
   --speed-hover: #262a32;
   --speed-selected: #2c303b;
   --speed-scrollbar: #565d69;
   color-scheme: dark;
-}
-
-:root.light-menu {
-  --speed-surface: #fff;
-  --speed-control: #fff;
-  --speed-border: #00000024;
-  --speed-text: #16181d;
-  --speed-hover: #f2f4f7;
-  --speed-selected: #e5e8ee;
-  --speed-scrollbar: #9a9faa;
 }
 
 * {
@@ -210,8 +199,8 @@ body.paused .big {
   gap: 8px;
   padding: 0 8px;
   border-radius: 8px;
-  background: rgba(22, 25, 31, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--bar-surface);
+  border: 1px solid var(--bar-border);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.36);
   opacity: 1;
   transform: translateY(0);
@@ -369,9 +358,9 @@ input[type="range"]:active::-webkit-slider-thumb {
   width: 72px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--speed-border);
+  border: 1px solid var(--bar-border);
   border-radius: 4px;
-  background: var(--speed-control);
+  background: transparent;
   color: var(--speed-text);
   font: 13px "Segoe UI", sans-serif;
   font-variant-numeric: tabular-nums;
@@ -384,7 +373,7 @@ input[type="range"]:active::-webkit-slider-thumb {
 }
 
 #speed:focus-visible, #speedMenu button:focus-visible {
-  outline: 1px solid var(--accent);
+  outline: 1px solid #b8becb;
   outline-offset: 1px;
 }
 
@@ -394,21 +383,21 @@ input[type="range"]:active::-webkit-slider-thumb {
   bottom: calc(100% + 16px);
   width: 100%;
   max-height: calc(100dvh - var(--bar-h) - var(--bar-inset) - 16px);
-  padding: 4px;
+  padding: 4px 2px;
   overflow-y: auto;
   scrollbar-gutter: stable both-edges;
   overscroll-behavior: contain;
-  border: 1px solid var(--speed-border);
+  border: 1px solid var(--bar-border);
   border-radius: 8px;
-  background: var(--speed-surface);
+  background: var(--bar-surface);
   box-shadow: 0 8px 28px #0005;
   animation: barEnter var(--motion-press) var(--motion-ease) backwards;
 }
 
-#speedMenu::-webkit-scrollbar { width: 8px; }
+#speedMenu::-webkit-scrollbar { width: 6px; }
 #speedMenu::-webkit-scrollbar-button { display: none; }
 #speedMenu::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: 4px;
   background: var(--speed-scrollbar);
   background-clip: padding-box;

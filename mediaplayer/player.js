@@ -692,7 +692,6 @@ window.receiveCommand = function (cmd) {
         post({ type: "close" });
         break;
       case "accent":
-        document.documentElement.classList.toggle("light-menu", cmd.dark === false);
         if (typeof cmd.v === "string" && /^#[0-9a-fA-F]{6,8}$/.test(cmd.v)) {
           document.documentElement.style.setProperty("--accent", cmd.v);
         }

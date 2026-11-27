@@ -368,43 +368,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid x:Name="RootGrid">
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="CommonStates">
-                                <VisualState x:Name="Normal">
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="PointerOver">
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="Pressed">
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                        <DoubleAnimation Storyboard.TargetName="PressOverlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.10" EasingFunction="{StaticResource ControlOpacityEase}"/>
-                                    </Storyboard>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
                         <Border x:Name="BaseBorder"
                                 Background="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}"
                                 BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="{TemplateBinding CornerRadius}"/>
-                        <Border x:Name="HoverOverlay"
-                                Background="{ThemeResource SubtleHoverOverlayBrush}"
-                                CornerRadius="{TemplateBinding CornerRadius}"
-                                Opacity="0"
-                                IsHitTestVisible="False"/>
-                        <Border x:Name="PressOverlay"
-                                Background="{ThemeResource SubtlePressOverlayBrush}"
-                                CornerRadius="{TemplateBinding CornerRadius}"
-                                Opacity="0"
-                                IsHitTestVisible="False"/>
                         <ContentPresenter Margin="{TemplateBinding Padding}"
                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"

@@ -16,7 +16,14 @@ namespace InstantReplay;
 
 public sealed record CategoryFilter(string Name, int Count)
 {
-    public string Label => Count > 0 ? $"{ReplayItem.FormatCategory(Name)}  {Count}" : ReplayItem.FormatCategory(Name);
+    public string Label
+    {
+        get
+        {
+            string name = ReplayItem.FormatCategoryLabel(Name);
+            return Count > 0 ? $"{name}  {Count}" : name;
+        }
+    }
 }
 
 public sealed class ReplayItem : INotifyPropertyChanged
@@ -42,7 +49,7 @@ public sealed class ReplayItem : INotifyPropertyChanged
     public string FolderPath { get; }
     public string VideoPath { get; }
     public string Category { get; }
-    public string BadgeCategory => FormatBadgeCategory(Category);
+    public string BadgeCategory => FormatCategoryLabel(Category);
     public DateTime Created { get; }
     public string ThumbPath => ReplayLibrary.ThumbnailPathFor(VideoPath);
 
@@ -157,10 +164,9 @@ public sealed class ReplayItem : INotifyPropertyChanged
         return string.IsNullOrWhiteSpace(display) ? "desktop" : display;
     }
 
-    private static string FormatBadgeCategory(string category)
+    internal static string FormatCategoryLabel(string category)
     {
-        if (string.IsNullOrWhiteSpace(category)) return "Desktop";
-        string c = category.Trim().ToLowerInvariant();
+        string c = FormatCategory(category);
         return c switch
         {
             "counter-strike global offensive" or "counter-strike: global offensive" => "cs:go",
@@ -175,7 +181,7 @@ public sealed class ReplayItem : INotifyPropertyChanged
             "world of warcraft" => "wow",
             "call of duty modern warfare" => "cod mw",
             "dead by daylight" => "dbd",
-            _ => FormatCategory(category)
+            _ => c
         };
     }
 

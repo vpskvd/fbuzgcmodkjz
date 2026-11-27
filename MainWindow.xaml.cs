@@ -1490,7 +1490,7 @@ public partial class MainWindow : Window
     }
 
     private void SendAccentInline() =>
-        SendScriptInline($"receiveCommand({JsonSerializer.Serialize(new { c = "accent", v = GetAccentHex(), dark = _settings.DarkMode })})");
+        SendScriptInline($"receiveCommand({JsonSerializer.Serialize(new { c = "accent", v = GetAccentHex() })})");
 
     private string GetAccentHex() => _settings.DarkMode ? "#B8BECB" : "#505562";
 
