@@ -2860,8 +2860,18 @@ public partial class MainWindow : Window
         });
     }
 
+    private void UpdateSelectedAudioHint()
+    {
+        SelectedAudioHint.Text = !RecorderEngine.SupportsSelectedAppAudio
+            ? "app audio capture requires windows build 20348 or newer"
+            : _settings.SystemAudioApps.Any(RecorderEngine.IsAudioExecutable)
+                ? "only checked apps are recorded after you save"
+                : "select at least one app and save to record its audio";
+    }
+
     private void RebuildAudioAppsList()
     {
+        UpdateSelectedAudioHint();
         AudioAppsListPanel.Children.Clear();
 
         var selectedSet = new HashSet<string>(
@@ -2948,6 +2958,7 @@ public partial class MainWindow : Window
         bool isChecked = cb.IsChecked == true;
         _settings.SystemAudioApps.RemoveAll(a => string.Equals(a, exe, StringComparison.OrdinalIgnoreCase));
         if (isChecked) _settings.SystemAudioApps.Add(exe.ToLowerInvariant());
+        UpdateSelectedAudioHint();
         CheckDirty();
     }
 
@@ -2965,6 +2976,11 @@ public partial class MainWindow : Window
         string raw = (AddAudioAppBox.Text ?? "").Trim().Trim('"');
         if (raw.Length == 0) return;
         string name = Path.GetFileName(raw).ToLowerInvariant();
+        if (!RecorderEngine.IsAudioExecutable(name))
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "invalid executable name", "enter a name like discord.exe");
+            return;
+        }
         if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) name += ".exe";
         if (!_settings.SystemAudioApps.Any(a => string.Equals(a, name, StringComparison.OrdinalIgnoreCase)))
             _settings.SystemAudioApps.Add(name);

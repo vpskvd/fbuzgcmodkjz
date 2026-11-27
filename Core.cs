@@ -523,11 +523,17 @@ public sealed class RecorderEngine : IDisposable
         }
     }
 
+    internal static bool IsAudioExecutable(string name) => !string.IsNullOrWhiteSpace(name)
+        && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && !name.Contains(';');
+
+    internal static bool SupportsSelectedAppAudio => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348);
+
     private bool StartNative(IntPtr window)
     {
         bool selectedAudio = string.Equals(_captureSettings.SystemAudioMode, "SelectedApps", StringComparison.OrdinalIgnoreCase);
+        string[] audioApps = selectedAudio ? _captureSettings.SystemAudioApps.Where(IsAudioExecutable).ToArray() : [];
         bool captureAudio = _captureSettings.RecordSystemAudio
-            && (!selectedAudio || _captureSettings.SystemAudioApps.Count > 0);
+            && (!selectedAudio || (SupportsSelectedAppAudio && audioApps.Length > 0));
         var quality = VideoQualityProfile.FromPreset(_captureSettings.QualityPreset, _captureSettings.FrameRate);
         bool ok = _engine.StartBuffering(
             monitorIndex: _captureSettings.CaptureMonitorIndex,
@@ -542,7 +548,7 @@ public sealed class RecorderEngine : IDisposable
             targetWindow: window,
             captureOptions: (uint)((_captureSettings.CaptureClientArea ? 1 : 0) | (_captureSettings.CaptureCursor ? 2 : 0) | (!_specific && _captureSettings.CaptureRoundedCorners ? 8 : 0) | (_captureSettings.CaptureSecondaryWindows ? 16 : 0) | (_specific && !selectedAudio ? 64 : 0)),
             outputWidthCap: quality.MaxWidth, outputHeightCap: quality.MaxHeight,
-            systemAudioApps: captureAudio && selectedAudio ? _captureSettings.SystemAudioApps.ToArray() : null);
+            systemAudioApps: captureAudio && selectedAudio ? audioApps : null);
 
         if (!ok)
         {
@@ -1125,7 +1131,12 @@ public sealed class ReplayEngine : IDisposable
             string audioAppsSpec = (systemAudioApps != null && systemAudioApps.Length > 0)
                 ? string.Join("|", systemAudioApps)
                 : "";
-            IrNative.IR_SetAudioApps(_engine, audioAppsSpec);
+            if (IrNative.IR_SetAudioApps(_engine, audioAppsSpec) != IrNative.OK)
+            {
+                _hasError = true;
+                Logger.Error("could not configure audio sources.");
+                return false;
+            }
             if (method == CaptureMethod.Dxgi && IrNative.IR_DxgiDuplicationSupported() == 0)
             {
                 _hasError = true;

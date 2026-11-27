@@ -889,6 +889,7 @@
                                                             Content="refresh"
                                                             Click="RefreshAudioAppsButton_Click"/>
                                                 </Grid>
+                                                <TextBlock x:Name="SelectedAudioHint" Style="{StaticResource Caption}" TextWrapping="Wrap"/>
                                                 <ScrollViewer Height="146" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
                                                     <StackPanel x:Name="AudioAppsListPanel" Spacing="4"/>
                                                 </ScrollViewer>

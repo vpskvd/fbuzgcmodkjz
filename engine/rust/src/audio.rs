@@ -734,14 +734,19 @@ impl AppAudioSlot {
         let handle = std::thread::Builder::new()
             .name(format!("ir-app-aud-{pid}"))
             .spawn(move || unsafe {
-                if let Ok(_com) = ComApartment::new() {
-                    if let Ok(client) = process_client(pid) {
-                        let _ = capture_process_pcm(&s_shared, &s_stop, &s_pcm, client);
-                    }
+                let result = (|| -> Result<()> {
+                    let _com = ComApartment::new()?;
+                    capture_process_pcm(&s_shared, &s_stop, &s_pcm, process_client(pid)?)
+                })();
+                if let Err(error) = result {
+                    Sink::System.note_fail(&s_shared, error.code().0 as i64);
                 }
                 s_alive.store(false, Ordering::Release);
             })
             .ok();
+        if handle.is_none() {
+            alive.store(false, Ordering::Release);
+        }
         Self {
             stop,
             alive,
@@ -765,10 +770,11 @@ unsafe fn capture_process_pcm(
     client: IAudioClient,
 ) -> windows::core::Result<()> {
     let format = pcm_format(2);
-    let flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK
+    let flags = AUDCLNT_STREAMFLAGS_LOOPBACK
+        | AUDCLNT_STREAMFLAGS_EVENTCALLBACK
         | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
         | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
-    client.Initialize(AUDCLNT_SHAREMODE_SHARED, flags, 1_000_000, 0, &format, None)?;
+    client.Initialize(AUDCLNT_SHAREMODE_SHARED, flags, 0, 0, &format, None)?;
     let event = AudioEvent(CreateEventW(None, false, false, None)?);
     client.SetEventHandle(event.0)?;
     let capture: IAudioCaptureClient = client.GetService()?;
