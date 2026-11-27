@@ -81,16 +81,23 @@
 
     <input id="vol" type="range" min="0" max="1" step="0.01" value="1" aria-label="volume" />
 
-    <select id="speed" aria-label="playback speed" title="playback speed">
-      <option value="0.25">0.25×</option>
-      <option value="0.5">0.5×</option>
-      <option value="0.75">0.75×</option>
-      <option value="1" selected>1×</option>
-      <option value="1.25">1.25×</option>
-      <option value="1.5">1.5×</option>
-      <option value="1.75">1.75×</option>
-      <option value="2">2×</option>
-    </select>
+    <div class="speed-picker">
+      <button id="speed" type="button" aria-haspopup="menu" aria-expanded="false"
+              aria-controls="speedMenu" aria-label="playback speed: 1×" title="playback speed">
+        <span id="speedValue">1×</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+      </button>
+      <div id="speedMenu" role="menu" aria-label="playback speed" hidden>
+        <button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-rate="0.25">0.25×</button>
+        <button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-rate="0.5">0.5×</button>
+        <button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-rate="0.75">0.75×</button>
+        <button type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-rate="1">1×</button>
+        <button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-rate="1.25">1.25×</button>
+        <button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-rate="1.5">1.5×</button>
+        <button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-rate="1.75">1.75×</button>
+        <button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-rate="2">2×</button>
+      </div>
+    </div>
 
     <button id="fs" class="btn" aria-label="toggle fullscreen" title="fullscreen (f)">
       <svg viewBox="0 0 24 24" class="stroke-ic">

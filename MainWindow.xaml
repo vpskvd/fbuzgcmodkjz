@@ -22,7 +22,7 @@
                           HorizontalScrollMode="Disabled"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Grid Padding="24,20,24,24">
+                <Grid Padding="{StaticResource PageInsets}">
                     <StackPanel MaxWidth="912"
                                 HorizontalAlignment="Stretch"
                                 Spacing="16">
@@ -405,7 +405,7 @@
                                                                 Style="{StaticResource MediaBadge}"
                                                                 HorizontalAlignment="Left"
                                                                 ToolTipService.ToolTip="{x:Bind Category}">
-                                                            <Grid ColumnSpacing="6" VerticalAlignment="Center">
+                                                            <Grid ColumnSpacing="8" VerticalAlignment="Center">
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
                                                                     <ColumnDefinition Width="*"/>
@@ -558,7 +558,7 @@
                           HorizontalScrollMode="Disabled"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Grid Padding="24,20,24,24">
+                <Grid Padding="{StaticResource PageInsets}">
                     <StackPanel x:Name="SettingsContent"
                                 MaxWidth="720"
                                 HorizontalAlignment="Stretch"
@@ -716,7 +716,7 @@
                                             BorderThickness="1"
                                             CornerRadius="6"
                                             Padding="12,8"
-                                            Margin="0,2,0,12">
+                                            Margin="0,0,0,12">
                                         <Grid ColumnSpacing="12">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -806,8 +806,8 @@
                                                 BorderBrush="{ThemeResource HairlineBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="6"
-                                                Padding="12,10"
-                                                Margin="0,2,0,12">
+                                                Padding="12,8"
+                                                Margin="0,0,0,12">
                                             <StackPanel Spacing="8">
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions>
@@ -964,7 +964,7 @@
                                             BorderThickness="1"
                                             CornerRadius="6"
                                             Padding="12,8"
-                                            Margin="0,12,0,4">
+                                            Margin="0,12">
                                         <Grid ColumnSpacing="12">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -1089,7 +1089,7 @@
             <Grid x:Name="ViewerPage"
                   Visibility="Collapsed"
                   Background="{ThemeResource BgBrush}"
-                  Padding="28,20,28,20"
+                  Padding="{StaticResource PageInsets}"
                   Canvas.ZIndex="10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -1098,7 +1098,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Properly spaced non-colliding viewer toolbar -->
-                <Grid x:Name="ViewerToolbar" Margin="0,0,0,16" MinHeight="48" Padding="8,0" ColumnSpacing="12"
+                <Grid x:Name="ViewerToolbar" Margin="0,0,0,12" MinHeight="48" Padding="8,0" ColumnSpacing="12"
                       Background="{ThemeResource SurfaceBrush}" BorderBrush="{ThemeResource SurfaceBorderBrush}" BorderThickness="1" CornerRadius="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -1240,8 +1240,8 @@
                         BorderBrush="{ThemeResource SurfaceBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
-                        Padding="14,12">
-                    <StackPanel Spacing="10">
+                        Padding="12">
+                    <StackPanel Spacing="12">
 
                         <!-- Row A: Trim Range Slider -->
                         <Grid ColumnSpacing="10">
@@ -1523,7 +1523,7 @@
               Background="{ThemeResource HeaderBarBrush}"
               BorderBrush="{ThemeResource HairlineBrush}"
               BorderThickness="0,0,0,1"
-              Padding="16,0,8,0"
+              Padding="12,0"
               Canvas.ZIndex="20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -1704,13 +1704,12 @@
                     MinHeight="48" Margin="16,0,16,10"
                     HorizontalAlignment="Center"
                     Visibility="Collapsed">
-                <StackPanel Orientation="Horizontal" Spacing="8" Padding="16,0,8,0" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8" Padding="12,0" VerticalAlignment="Center">
                     <Ellipse Width="8" Height="8" Fill="{ThemeResource AccentIndicatorBrush}"/>
                     <TextBlock Text="unsaved changes"
                                Style="{StaticResource ToolbarLabel}"
                                FontWeight="Medium"
-                               Foreground="{ThemeResource TextPrimaryBrush}"
-                               Margin="0,0,4,0"/>
+                               Foreground="{ThemeResource TextPrimaryBrush}"/>
                     <Button FontFamily="Segoe UI" x:Name="PendingDiscardButton"
                             Style="{StaticResource BaseButtonStyle}"
                             Height="28"

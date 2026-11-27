@@ -30,6 +30,9 @@ const icWaveHigh = document.getElementById("icWaveHigh");
 const icMuted = document.getElementById("icMuted");
 const vol = document.getElementById("vol");
 const speed = document.getElementById("speed");
+const speedValue = document.getElementById("speedValue");
+const speedMenu = document.getElementById("speedMenu");
+const speedItems = [...speedMenu.querySelectorAll("[data-rate]")];
 const fsBtn = document.getElementById("fs");
 const icExpand = document.getElementById("icExpand");
 const icCompress = document.getElementById("icCompress");
@@ -40,10 +43,50 @@ const cropTag = document.getElementById("cropTag");
 function setPlaybackSpeed(rate) {
   v.defaultPlaybackRate = rate;
   v.playbackRate = rate;
-  speed.value = String(rate);
+  speedValue.textContent = `${rate}×`;
+  speed.setAttribute("aria-label", `playback speed: ${rate}×`);
+  for (const item of speedItems) {
+    item.setAttribute("aria-checked", String(Number(item.dataset.rate) === rate));
+  }
 }
 
-speed.addEventListener("change", () => setPlaybackSpeed(Number(speed.value)));
+function openSpeedMenu() {
+  speedMenu.hidden = false;
+  speed.setAttribute("aria-expanded", "true");
+  const selected = speedMenu.querySelector('[aria-checked="true"]');
+  selected.focus({ preventScroll: true });
+  selected.scrollIntoView({ block: "nearest" });
+}
+
+function closeSpeedMenu(restoreFocus = false) {
+  if (speedMenu.hidden) return;
+  speedMenu.hidden = true;
+  speed.setAttribute("aria-expanded", "false");
+  if (restoreFocus) speed.focus({ preventScroll: true });
+}
+
+speed.addEventListener("click", () => {
+  if (speedMenu.hidden) openSpeedMenu();
+  else closeSpeedMenu(true);
+});
+speedMenu.addEventListener("click", (event) => {
+  const item = event.target.closest("[data-rate]");
+  if (!item) return;
+  setPlaybackSpeed(Number(item.dataset.rate));
+  closeSpeedMenu(true);
+});
+speedMenu.addEventListener("keydown", (event) => {
+  const index = speedItems.indexOf(document.activeElement);
+  const last = speedItems.length - 1;
+  const next = { ArrowUp: index <= 0 ? last : index - 1,
+    ArrowDown: index >= last ? 0 : index + 1, Home: 0, End: last }[event.key];
+  if (next !== undefined) {
+    event.preventDefault();
+    speedItems[next].focus();
+  } else if (event.key === "Tab") {
+    closeSpeedMenu(true);
+  }
+});
 
 let scrubbing = false;
 let mutedByUser = null;
@@ -254,6 +297,10 @@ bigPlay.addEventListener("click", togglePlay);
 bigReplay.addEventListener("click", togglePlay);
 
 document.addEventListener("click", (e) => {
+  if (!speedMenu.hidden && !e.target.closest(".speed-picker")) {
+    closeSpeedMenu(!e.target.closest("button, input"));
+    return;
+  }
   if (editMode) return;
   if (e.target.closest("#bar, #closeBtn, .big, #error, #cropLayer")) return;
   togglePlay();
@@ -425,7 +472,18 @@ function toggleFullscreen() {
 }
 
 document.addEventListener("keydown", (e) => {
-  if (e.target === speed) return;
+  if (!speedMenu.hidden && e.key === "Escape") {
+    e.preventDefault();
+    closeSpeedMenu(true);
+    return;
+  }
+  if (e.target.closest?.(".speed-picker")) {
+    if (e.target === speed && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      openSpeedMenu();
+    }
+    if (e.key !== "Escape") return;
+  }
   if (e.key === "Escape") {
     e.preventDefault();
     post({ type: "close" });
@@ -477,7 +535,7 @@ function activity() {
   document.body.classList.remove("idle");
   if (idleTimer) clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
-    if (!v.paused && !v.ended && !v.srcError && errorBox.hidden && !scrubbing && !editMode &&
+    if (!v.paused && !v.ended && !v.srcError && errorBox.hidden && !scrubbing && !editMode && speedMenu.hidden &&
         !document.querySelector("#bar:hover, #bar :focus-visible, #closeBtn:hover, #closeBtn:focus-visible")) {
       document.body.classList.add("idle");
     }
@@ -548,6 +606,7 @@ window.receiveCommand = function (cmd) {
   try {
     switch (cmd.c) {
       case "load":
+        closeSpeedMenu();
         frameSignaled = false;
         dragState = null;
         cancelScrubState();
@@ -579,6 +638,7 @@ window.receiveCommand = function (cmd) {
         }
         break;
       case "unload":
+        closeSpeedMenu();
         frameSignaled = false;
         dragState = null;
         cancelScrubState();
@@ -596,6 +656,7 @@ window.receiveCommand = function (cmd) {
         v.load();
         break;
       case "fsState":
+        closeSpeedMenu();
         currentMode = cmd.fullscreen ? "fullscreen" : "inline";
         document.body.classList.remove("inline", "fullscreen");
         document.body.classList.add(currentMode);
@@ -631,6 +692,7 @@ window.receiveCommand = function (cmd) {
         post({ type: "close" });
         break;
       case "accent":
+        document.documentElement.classList.toggle("light-menu", cmd.dark === false);
         if (typeof cmd.v === "string" && /^#[0-9a-fA-F]{6,8}$/.test(cmd.v)) {
           document.documentElement.style.setProperty("--accent", cmd.v);
         }

@@ -1504,7 +1504,8 @@ public partial class MainWindow : Window
         visual.Clip = visual.Compositor.CreateGeometricClip(geometry);
     }
 
-    private void SendAccentInline() => SendScriptInline($"receiveCommand({{\"c\":\"accent\",\"v\":\"{GetAccentHex()}\"}})");
+    private void SendAccentInline() =>
+        SendScriptInline($"receiveCommand({JsonSerializer.Serialize(new { c = "accent", v = GetAccentHex(), dark = _settings.DarkMode })})");
 
     private string GetAccentHex() => _settings.DarkMode ? "#B8BECB" : "#505562";
 
@@ -1696,7 +1697,7 @@ public partial class MainWindow : Window
         if (ViewerToolbar != null) ViewerToolbar.Visibility = Visibility.Visible;
         if (ViewerPage != null)
         {
-            ViewerPage.Padding = new Thickness(24, 68, 24, 20);
+            ViewerPage.Padding = (Thickness)Application.Current.Resources["PageInsets"];
             ViewerPage.Background = GetThemedBrush("BgBrush");
         }
         if (PlayerCard != null)
@@ -2926,7 +2927,7 @@ public partial class MainWindow : Window
                 },
                 IsChecked = selectedSet.Contains(app.Executable),
                 MinHeight = 26,
-                Padding = new Thickness(6, 2, 0, 2),
+                Padding = new Thickness(6, 2, 6, 2),
                 Tag = app.Executable
             };
             cb.Checked += AudioAppCheckBox_Changed;

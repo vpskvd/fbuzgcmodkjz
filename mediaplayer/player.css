@@ -5,7 +5,25 @@
   --motion-press: 140ms;
   --motion-panel: 200ms;
   --bar-h: 44px;
+  --bar-inset: 16px;
+  --speed-surface: #1b1e25;
+  --speed-control: #20242d;
+  --speed-border: #ffffff22;
+  --speed-text: #f0f2f6;
+  --speed-hover: #262a32;
+  --speed-selected: #2c303b;
+  --speed-scrollbar: #565d69;
   color-scheme: dark;
+}
+
+:root.light-menu {
+  --speed-surface: #fff;
+  --speed-control: #fff;
+  --speed-border: #00000024;
+  --speed-text: #16181d;
+  --speed-hover: #f2f4f7;
+  --speed-selected: #e5e8ee;
+  --speed-scrollbar: #9a9faa;
 }
 
 * {
@@ -195,9 +213,8 @@ body.paused .big {
 /* Solid Floating Playback Bar (zero blur, clean dark neutral) */
 #bar {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
+  inset-inline: var(--bar-inset);
+  bottom: var(--bar-inset);
   z-index: 3;
   height: var(--bar-h);
   display: flex;
@@ -352,28 +369,105 @@ input[type="range"]:active::-webkit-slider-thumb {
   flex: 0 0 88px;
 }
 
-#speed {
+.speed-picker {
+  position: relative;
   flex: 0 0 auto;
+}
+
+#speed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 72px;
   height: 32px;
-  padding-inline: 6px;
-  border: 1px solid transparent;
+  padding: 0 8px;
+  border: 1px solid var(--speed-border);
   border-radius: 4px;
-  background: #20242c;
-  color: #f2f4f8;
-  color-scheme: dark;
-  font: 500 12px "Segoe UI", sans-serif;
+  background: var(--speed-control);
+  color: var(--speed-text);
+  font: 13px "Segoe UI", sans-serif;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   transition: background-color var(--motion-press) var(--motion-ease);
 }
 
-#speed:hover {
-  background: #303540;
+#speed:hover, #speed[aria-expanded="true"] {
+  background: var(--speed-hover);
 }
 
-#speed:focus-visible {
-  outline: 1.5px solid #b8becb;
+#speed:focus-visible, #speedMenu button:focus-visible {
+  outline: 1px solid var(--accent);
   outline-offset: 1px;
+}
+
+#speed svg {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#speed[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+#speedMenu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 16px);
+  width: 132px;
+  max-height: calc(100dvh - var(--bar-h) - var(--bar-inset) - 16px);
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--speed-border);
+  border-radius: 8px;
+  background: var(--speed-surface);
+  box-shadow: 0 8px 28px #0005;
+  animation: barEnter var(--motion-press) var(--motion-ease) backwards;
+}
+
+#speedMenu::-webkit-scrollbar { width: 8px; }
+#speedMenu::-webkit-scrollbar-button { display: none; }
+#speedMenu::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: var(--speed-scrollbar);
+  background-clip: padding-box;
+}
+
+#speedMenu button {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--speed-text);
+  font: 13px "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+
+#speedMenu button + button { margin-top: 4px; }
+#speedMenu button:hover { background: var(--speed-hover); }
+#speedMenu button:focus-visible { outline-offset: -2px; }
+#speedMenu button[aria-checked="true"] { background: var(--speed-selected); }
+#speedMenu button[aria-checked="true"]::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
 body.inline .close-btn {
@@ -385,12 +479,8 @@ body.inline .close-btn {
     flex: 0 0 54px;
   }
   #bar {
+    --bar-inset: 10px;
     gap: 6px;
-    padding-left: 8px;
-    padding-right: 8px;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
   }
   .time {
     min-width: 32px;
@@ -405,11 +495,11 @@ body.inline .close-btn {
 
 @media (max-width: 400px) {
   #bar {
+    --bar-h: 56px;
     display: grid;
     grid-template: "seek seek seek seek seek seek" 12px
                    "play current duration mute speed fullscreen" 32px
                    / auto auto auto auto minmax(0, 1fr) auto;
-    height: 56px;
     gap: 2px 6px;
     align-content: center;
   }
@@ -419,7 +509,10 @@ body.inline .close-btn {
   #cur { grid-area: current; }
   #dur { grid-area: duration; }
   #mute { grid-area: mute; }
-  #speed { grid-area: speed; justify-self: end; }
+  .speed-picker { grid-area: speed; justify-self: end; }
+  #speedMenu { bottom: calc(100% + 24px); }
+  #speedMenu button { min-height: 28px; }
+  #speedMenu button + button { margin-top: 2px; }
   #fs { grid-area: fullscreen; }
 }
 

@@ -15,6 +15,7 @@
     <Thickness x:Key="CardPadding">20</Thickness>
     <Thickness x:Key="CompactCardPadding">16</Thickness>
     <Thickness x:Key="SettingsCardPadding">16,0</Thickness>
+    <Thickness x:Key="PageInsets">24,20</Thickness>
 
     <!-- Typography scale (weight 400-600, zero small negative tracking) -->
     <x:Double x:Key="CaptionFontSize">12</x:Double>
