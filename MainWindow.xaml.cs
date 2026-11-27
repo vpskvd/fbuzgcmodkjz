@@ -90,7 +90,6 @@ public partial class MainWindow : Window
     private ulong _lastIdleTicks, _lastKernelTicks, _lastUserTicks;
     private bool _statsBaselineTaken;
     private AudioDeviceWatcher? _audioWatcher;
-    private Storyboard? _dotStoryboard;
     private Vector3 _navPillPosition;
     private bool _homeEntrancePlayed;
     private bool _inlineVideoRevealed;
@@ -552,7 +551,6 @@ public partial class MainWindow : Window
                 UpdateHeroOrnament();
                 if (!_uiSettings.AnimationsEnabled && _durationDisclosure != null)
                     SetDurationCustomVisible(_durationCustomVisible, animate: false);
-                if (!_uiSettings.AnimationsEnabled) StopDotPulse();
             });
     }
 
@@ -671,8 +669,8 @@ public partial class MainWindow : Window
         _navPillPosition = target;
         var primary = GetThemedBrush("TextPrimaryBrush");
         var secondary = GetThemedBrush("TextSecondaryBrush");
-        NavHomeButton.Foreground = NavHomeIcon.Stroke = _isSettingsActive ? secondary : primary;
-        NavSettingsButton.Foreground = NavSettingsIcon.Stroke = _isSettingsActive ? primary : secondary;
+        NavHomeButton.Foreground = _isSettingsActive ? secondary : primary;
+        NavSettingsButton.Foreground = _isSettingsActive ? primary : secondary;
     }
 
     private void FadeIn(FrameworkElement element, float from = 0.8f, float offset = 0)
@@ -755,7 +753,6 @@ public partial class MainWindow : Window
         _statsTimer?.Stop();
         _micMeterTimer?.Stop();
         _micRefreshTimer?.Stop();
-        StopDotPulse();
         _taskbarBadge?.SetTaskbarVisible(false);
         NotifyRunningInBackground();
     }
@@ -904,10 +901,6 @@ public partial class MainWindow : Window
         Activate();
         RefreshStartupToggleState();
         RefreshAppBadge();
-        if (_engine.IsRunning && !_engine.IsPaused)
-        {
-            StartDotPulse();
-        }
     }
 
     private void RefreshAppBadge() =>
@@ -1016,19 +1009,13 @@ public partial class MainWindow : Window
 
     private void SetRunningVisual(bool running)
     {
-        StopDotPulse();
         _lastBufferHealthy = running ? true : null;
 
         if (running)
         {
             StatusHeadline.Text = _engine.TargetState;
             var recBrush = GetThemedBrush("RecBrush");
-            RecDot.Fill = recBrush;
-            RecDot.Opacity = 1;
-            if (!_engine.IsPaused && !_isHidden)
-            {
-                StartDotPulse();
-            }
+            StatusHeadline.Foreground = recBrush;
             ApplyStartStopLook(true);
             _hasErrored = false;
             RefreshAppBadge();
@@ -1036,7 +1023,7 @@ public partial class MainWindow : Window
         else
         {
             var muted = GetThemedBrush("TextTertiaryBrush");
-            RecDot.Fill = muted;
+            StatusHeadline.Foreground = muted;
             StatusHeadline.Text = "stopped";
             ApplyStartStopLook(false);
             RefreshAppBadge();
@@ -1062,10 +1049,9 @@ public partial class MainWindow : Window
         }
         if (_engine.IsPaused)
         {
-            StopDotPulse();
             StatusHeadline.Text = _engine.TargetState;
             var warnBrush = GetThemedBrush("ErrorBrush");
-            RecDot.Fill = warnBrush;
+            StatusHeadline.Foreground = warnBrush;
             ApplyStartStopLook(true);
             RefreshAppBadge();
             _lastBufferHealthy = null;
@@ -1078,9 +1064,8 @@ public partial class MainWindow : Window
 
         if (healthy) { SetRunningVisual(true); return; }
 
-        StopDotPulse();
         var err = GetThemedBrush("ErrorBrush");
-        RecDot.Fill = err;
+        StatusHeadline.Foreground = err;
         StatusHeadline.Text = "error";
         UpdateAppBadge(BadgeKind.Error);
     }
@@ -2246,7 +2231,7 @@ public partial class MainWindow : Window
                 double target = Math.Clamp(micPeak, 0, 100) / 100.0;
                 AnimateDouble(MicLevelBarScale, ScaleTransform.ScaleXProperty, target, 210);
                 MicStatusLabel.Text = $"active · {activeName.ToLowerInvariant()}";
-                MicLiveDot.Fill = GetThemedBrush(micPeak >= 8 ? "AccentIndicatorBrush" : "SuccessBrush");
+                MicStatusLabel.Foreground = GetThemedBrush(micPeak >= 8 ? "AccentIndicatorBrush" : "SuccessBrush");
                 return;
             }
         }
@@ -2271,19 +2256,19 @@ public partial class MainWindow : Window
                     double target = Math.Clamp(peak, 0, 100) / 100.0;
                     AnimateDouble(MicLevelBarScale, ScaleTransform.ScaleXProperty, target, 210);
                     MicStatusLabel.Text = $"active · {active.ToLowerInvariant()}";
-                    MicLiveDot.Fill = GetThemedBrush(peak >= 8 ? "AccentIndicatorBrush" : "SuccessBrush");
+                    MicStatusLabel.Foreground = GetThemedBrush(peak >= 8 ? "AccentIndicatorBrush" : "SuccessBrush");
                 }
                 else if (_knownMics.Count == 0)
                 {
                     MicLevelBarScale.ScaleX = 0;
                     MicStatusLabel.Text = "no active microphone detected";
-                    MicLiveDot.Fill = GetThemedBrush("ErrorBrush");
+                    MicStatusLabel.Foreground = GetThemedBrush("ErrorBrush");
                 }
                 else
                 {
                     MicLevelBarScale.ScaleX = 0;
                     MicStatusLabel.Text = "selected mic disconnected · click detect active";
-                    MicLiveDot.Fill = GetThemedBrush("ErrorBrush");
+                    MicStatusLabel.Foreground = GetThemedBrush("ErrorBrush");
                 }
             });
         });
@@ -2316,13 +2301,13 @@ public partial class MainWindow : Window
                 MicStatusLabel.Text = peak >= 4
                     ? $"signal detected · {detected.ToLowerInvariant()}"
                     : $"active default · {detected.ToLowerInvariant()}";
-                MicLiveDot.Fill = GetThemedBrush("SuccessBrush");
+                MicStatusLabel.Foreground = GetThemedBrush("SuccessBrush");
             }
             else
             {
                 MicLevelBarScale.ScaleX = 0;
                 MicStatusLabel.Text = "no active microphone found";
-                MicLiveDot.Fill = GetThemedBrush("ErrorBrush");
+                MicStatusLabel.Foreground = GetThemedBrush("ErrorBrush");
             }
         }
         finally
@@ -3500,37 +3485,6 @@ public partial class MainWindow : Window
         storyboard.Begin();
     }
 
-    private void StartDotPulse()
-    {
-        if (_dotStoryboard != null || !_uiSettings.AnimationsEnabled) return;
-        try
-        {
-            var anim = new DoubleAnimation
-            {
-                From = 1.0,
-                To = 0.72,
-                Duration = TimeSpan.FromSeconds(1.4),
-                AutoReverse = true,
-                RepeatBehavior = RepeatBehavior.Forever,
-                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-            };
-            Storyboard.SetTarget(anim, RecDot);
-            Storyboard.SetTargetProperty(anim, "Opacity");
-            var sb = new Storyboard();
-            sb.Children.Add(anim);
-            _dotStoryboard = sb;
-            sb.Begin();
-        }
-        catch { }
-    }
-
-    private void StopDotPulse()
-    {
-        try { _dotStoryboard?.Stop(); } catch { }
-        _dotStoryboard = null;
-        if (RecDot != null) RecDot.Opacity = 1;
-    }
-
     private void UpdateSystemStats()
     {
         double? cpuPct = null;
@@ -3604,7 +3558,6 @@ public partial class MainWindow : Window
         _deviceChangeDebounceTimer?.Stop();
         _audioWatcher?.Dispose();
         Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
-        StopDotPulse();
         StopViewerPlayback(destroy: true);
         EnableWindow(_hwnd, true);
         _engine.Stop();

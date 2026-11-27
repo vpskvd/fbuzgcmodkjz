@@ -87,11 +87,6 @@ body.idle video {
   transition: background-color var(--motion-press) var(--motion-ease), border-color var(--motion-press) var(--motion-ease), opacity var(--motion-panel) var(--motion-ease), transform var(--motion-panel) var(--motion-ease);
 }
 
-.close-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.22);
@@ -100,13 +95,6 @@ body.idle video {
 .close-btn:active {
   background: rgba(255, 255, 255, 0.09);
   transform: scale(0.96);
-}
-
-.close-btn svg path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
 }
 
 #center {
@@ -377,8 +365,7 @@ input[type="range"]:active::-webkit-slider-thumb {
 #speed {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
   width: 72px;
   height: 32px;
   padding: 0 8px;
@@ -401,27 +388,15 @@ input[type="range"]:active::-webkit-slider-thumb {
   outline-offset: 1px;
 }
 
-#speed svg {
-  flex: 0 0 14px;
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-#speed[aria-expanded="true"] svg { transform: rotate(180deg); }
-
 #speedMenu {
   position: absolute;
   right: 0;
   bottom: calc(100% + 16px);
-  width: 132px;
+  width: 100%;
   max-height: calc(100dvh - var(--bar-h) - var(--bar-inset) - 16px);
   padding: 4px;
   overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
   overscroll-behavior: contain;
   border: 1px solid var(--speed-border);
   border-radius: 8px;
@@ -440,18 +415,17 @@ input[type="range"]:active::-webkit-slider-thumb {
 }
 
 #speedMenu button {
-  position: relative;
   display: block;
   width: 100%;
   min-height: 32px;
-  padding: 0 12px;
+  padding: 0 4px;
   border: 0;
   border-radius: 4px;
   background: transparent;
   color: var(--speed-text);
   font: 13px "Segoe UI", sans-serif;
   font-variant-numeric: tabular-nums;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -459,16 +433,6 @@ input[type="range"]:active::-webkit-slider-thumb {
 #speedMenu button:hover { background: var(--speed-hover); }
 #speedMenu button:focus-visible { outline-offset: -2px; }
 #speedMenu button[aria-checked="true"] { background: var(--speed-selected); }
-#speedMenu button[aria-checked="true"]::before {
-  content: "";
-  position: absolute;
-  left: 3px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--accent);
-}
 
 body.inline .close-btn {
   display: none;

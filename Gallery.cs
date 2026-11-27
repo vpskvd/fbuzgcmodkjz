@@ -43,10 +43,6 @@ public sealed class ReplayItem : INotifyPropertyChanged
     public string VideoPath { get; }
     public string Category { get; }
     public string BadgeCategory => FormatBadgeCategory(Category);
-    public bool IsDesktop => string.Equals(Category, "desktop", StringComparison.OrdinalIgnoreCase);
-    public string CategoryGlyph => IsDesktop ? "\uE7F4" : "\uE7FC";
-    public Microsoft.UI.Xaml.Visibility DesktopIconVisibility => IsDesktop ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
-    public Microsoft.UI.Xaml.Visibility GameIconVisibility => IsDesktop ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
     public DateTime Created { get; }
     public string ThumbPath => ReplayLibrary.ThumbnailPathFor(VideoPath);
 
