@@ -215,12 +215,17 @@ pub unsafe fn read_texture(
         context.Unmap(staging, 0);
         return Err(Error::from_hresult(E_FAIL));
     }
-    out.resize(row * desc.Height as usize, 0);
-    for y in 0..desc.Height as usize {
-        out[y * row..(y + 1) * row].copy_from_slice(std::slice::from_raw_parts(
-            (mapped.pData as *const u8).add(y * mapped.RowPitch as usize),
-            row,
-        ));
+    let height = desc.Height as usize;
+    let pitch = mapped.RowPitch as usize;
+    let pixels = mapped.pData.cast::<u8>();
+    out.clear();
+    out.reserve(row * height);
+    if pitch == row {
+        out.extend_from_slice(std::slice::from_raw_parts(pixels, row * height));
+    } else {
+        for y in 0..height {
+            out.extend_from_slice(std::slice::from_raw_parts(pixels.add(y * pitch), row));
+        }
     }
     context.Unmap(staging, 0);
     Ok((desc.Width, desc.Height))
@@ -253,42 +258,30 @@ impl FramePublisher {
             crop: None,
         }
     }
-    pub fn accept(&mut self, source_time: i64) -> bool {
-        if source_time < self.shared.start_qpc.load(Ordering::Acquire) {
-            return false;
-        }
+    pub fn accept(&mut self, source_time: i64) -> Option<i64> {
+        let pts = self.shared.capture_time(source_time)?;
         let fps = self.shared.fps.load(Ordering::Relaxed).max(0) as u32;
         let gpu = self.shared.gpu_mode.load(Ordering::Acquire) == 1;
         let accepted = self.pacer.accept(source_time, sampling_rate(fps, gpu));
         if !accepted {
             self.shared.n_capture_drop.fetch_add(1, Ordering::Relaxed);
         }
-        accepted
+        accepted.then_some(pts)
     }
     pub unsafe fn publish(
         &mut self,
         texture: &ID3D11Texture2D,
-        source_time: i64,
-        content: Option<SizeInt32>,
+        pts: i64,
+        content: SizeInt32,
     ) -> windows::core::Result<()> {
-        let Some(pts) = self.shared.capture_time(source_time) else {
-            return Ok(());
-        };
-        if !self.accept(source_time) {
-            return Ok(());
-        }
         let mut desc = D3D11_TEXTURE2D_DESC::default();
         texture.GetDesc(&mut desc);
         let mut rect = RECT {
             left: 0,
             top: 0,
-            right: desc.Width as i32,
-            bottom: desc.Height as i32,
+            right: (desc.Width as i32).min(content.Width),
+            bottom: (desc.Height as i32).min(content.Height),
         };
-        if let Some(size) = content {
-            rect.right = rect.right.min(size.Width);
-            rect.bottom = rect.bottom.min(size.Height);
-        }
         let window = HWND(self.shared.target_window.load(Ordering::Relaxed) as *mut _);
         if !window.0.is_null() && self.shared.capture_options.load(Ordering::Relaxed) & 1 != 0 {
             let mut frame = RECT::default();
@@ -358,30 +351,8 @@ impl FramePublisher {
         } else {
             texture.clone()
         };
-        if self.shared.gpu_mode.load(Ordering::Acquire) == 1 {
-            if self.gpu.as_ref().is_none_or(|g| g.w != w || g.h != h) {
-                match GpuInput::create(&self.device, &self.context, w, h) {
-                    Ok(g) => {
-                        let g = Arc::new(g);
-                        self.gpu = Some(g.clone());
-                        *self.shared.gpu.lock().unwrap_or_else(|e| e.into_inner()) = Some(g);
-                        self.shared.gpu_gen.fetch_add(1, Ordering::Release);
-                    }
-                    Err(_) => {
-                        self.shared.gpu_mode.store(0, Ordering::Release);
-                        self.gpu = None;
-                    }
-                }
-            }
-            if let Some(g) = &self.gpu {
-                g.submit(&cropped, pts);
-                self.shared.last_capture_pts.store(pts, Ordering::Release);
-                self.shared.gpu_frames.fetch_add(1, Ordering::Release);
-                self.shared.n_capture.fetch_add(1, Ordering::Relaxed);
-                let _queue = self.shared.raw.lock().unwrap_or_else(|e| e.into_inner());
-                self.shared.raw_wait.notify_all();
-                return Ok(());
-            }
+        if self.submit_gpu(&cropped, w, h, pts) {
+            return Ok(());
         }
         let mut bgra = self.shared.take_bgra();
         let (w, h) = read_texture(
@@ -391,6 +362,35 @@ impl FramePublisher {
             &mut self.staging,
             &mut bgra,
         )?;
+        self.submit_bgra(bgra, w, h, pts);
+        Ok(())
+    }
+
+    pub fn submit_gpu(&mut self, texture: &ID3D11Texture2D, w: u32, h: u32, pts: i64) -> bool {
+        if self.shared.gpu_mode.load(Ordering::Acquire) != 1 {
+            return false;
+        }
+        if self.gpu.as_ref().is_none_or(|g| g.w != w || g.h != h) {
+            let Ok(input) = GpuInput::create(&self.device, &self.context, w, h) else {
+                self.shared.gpu_mode.store(0, Ordering::Release);
+                self.gpu = None;
+                return false;
+            };
+            let input = Arc::new(input);
+            self.gpu = Some(input.clone());
+            *self.shared.gpu.lock().unwrap_or_else(|e| e.into_inner()) = Some(input);
+            self.shared.gpu_gen.fetch_add(1, Ordering::Release);
+        }
+        self.gpu.as_ref().unwrap().submit(texture, pts);
+        self.shared.last_capture_pts.store(pts, Ordering::Release);
+        self.shared.gpu_frames.fetch_add(1, Ordering::Release);
+        self.shared.n_capture.fetch_add(1, Ordering::Relaxed);
+        let _queue = self.shared.raw.lock().unwrap_or_else(|e| e.into_inner());
+        self.shared.raw_wait.notify_all();
+        true
+    }
+
+    pub fn submit_bgra(&self, bgra: Vec<u8>, w: u32, h: u32, pts: i64) {
         self.shared.n_capture.fetch_add(1, Ordering::Relaxed);
         self.shared.last_capture_pts.store(pts, Ordering::Release);
         self.shared.push_frame(RawFrame {
@@ -399,7 +399,6 @@ impl FramePublisher {
             h,
             pts100ns: pts,
         });
-        Ok(())
     }
 }
 struct WgcSession {
@@ -599,10 +598,13 @@ unsafe fn wgc_worker(
                 if resized || content.Width < 2 || content.Height < 2 {
                     return Ok(());
                 }
+                publisher.shared.n_wgc.fetch_add(1, Ordering::Relaxed);
+                let Some(pts) = publisher.accept(time) else {
+                    return Ok(());
+                };
                 let access: IDirect3DDxgiInterfaceAccess = frame.Surface()?.cast()?;
                 let texture: ID3D11Texture2D = access.GetInterface()?;
-                publisher.shared.n_wgc.fetch_add(1, Ordering::Relaxed);
-                publisher.publish(&texture, time, Some(content))
+                publisher.publish(&texture, pts, content)
             })();
             let _ = frame.Close();
             let mut previous = callback_size.lock().unwrap_or_else(|e| e.into_inner());

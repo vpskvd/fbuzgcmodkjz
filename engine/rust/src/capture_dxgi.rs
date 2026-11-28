@@ -1,6 +1,6 @@
 use crate::{
-    capture::{CapError, FramePacer, Monitor},
-    qpc100ns, RawFrame, SharedState,
+    capture::{CapError, FramePublisher, Monitor},
+    qpc100ns, SharedState,
 };
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -88,6 +88,11 @@ impl Drop for AcquiredFrame<'_> {
         }
     }
 }
+
+fn adapter_desc(device: &ID3D11Device) -> windows::core::Result<DXGI_ADAPTER_DESC> {
+    unsafe { device.cast::<IDXGIDevice>()?.GetAdapter()?.GetDesc() }
+}
+
 fn run(
     shared: Arc<SharedState>,
     monitor: Monitor,
@@ -95,7 +100,6 @@ fn run(
     ready: mpsc::Sender<std::result::Result<(), String>>,
 ) {
     let mut reported = false;
-    let mut pacer = FramePacer::with_tolerance(20_000);
     while shared.running.load(Ordering::Acquire) && !stop.load(Ordering::Acquire) {
         let resources = unsafe { duplication(monitor) };
         let (device, context, dup) = match resources {
@@ -117,24 +121,38 @@ fn run(
         let mut staging = None;
         let mut desktop = Vec::new();
         let mut desktop_size = (0, 0);
+        let mut desktop_changed = false;
+        let mut has_desktop = false;
         let mut composition: Option<ID3D11Texture2D> = None;
-        let (encode_device, encode_context) = if shared.gpu_mode.load(Ordering::Acquire) == 1 {
+        let encoding = if shared.gpu_mode.load(Ordering::Acquire) == 1 {
             unsafe { crate::capture::create_device(None) }
-                .unwrap_or_else(|_| (device.clone(), context.clone()))
+                .ok()
+                .filter(|(encoder, _)| match (adapter_desc(&device), adapter_desc(encoder)) {
+                    (Ok(capture), Ok(encode)) => {
+                        capture.AdapterLuid.HighPart != encode.AdapterLuid.HighPart
+                            || capture.AdapterLuid.LowPart != encode.AdapterLuid.LowPart
+                    }
+                    // Preserve the default adapter when we cannot compare the devices.
+                    _ => true,
+                })
         } else {
-            (device.clone(), context.clone())
+            None
         };
+        let shared_device = encoding.is_none();
+        let (encode_device, encode_context) =
+            encoding.unwrap_or_else(|| (device.clone(), context.clone()));
         if std::env::var_os("IR_DEBUG_ADAPTER").is_some() {
             for (name, d) in [("capture", &device), ("encoder", &encode_device)] {
-                unsafe {
-                    if let Ok(desc) = d.cast::<IDXGIDevice>().and_then(|d| d.GetAdapter()).and_then(|a| a.GetDesc()) {
-                        eprintln!("[dxgi] {name} adapter={} luid={}:{} vendor={}", String::from_utf16_lossy(&desc.Description).trim_end_matches('\0'), desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart, desc.VendorId);
-                    }
+                if let Ok(desc) = adapter_desc(d) {
+                    eprintln!("[dxgi] {name} adapter={} luid={}:{} vendor={}", String::from_utf16_lossy(&desc.Description).trim_end_matches('\0'), desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart, desc.VendorId);
                 }
             }
         }
-        let mut publisher =
-            crate::capture::FramePublisher::new(shared.clone(), encode_device.clone(), encode_context.clone());
+        let mut publisher = FramePublisher::new(
+            shared.clone(),
+            encode_device.clone(),
+            encode_context.clone(),
+        );
         publisher.set_pacing_tolerance(20_000);
         let mut pointer = PointerShape::default();
         let mut recreate = false;
@@ -172,7 +190,7 @@ fn run(
                     return;
                 }
             }
-            let _frame = AcquiredFrame(&dup);
+            let frame = AcquiredFrame(&dup);
             shared.n_wgc.fetch_add(1, Ordering::Relaxed);
             let cursor = shared.capture_options.load(Ordering::Relaxed) & 2 != 0;
             if cursor {
@@ -183,59 +201,69 @@ fn run(
             } else {
                 info.LastPresentTime
             };
-            if tick <= 0 {
+            if info.LastPresentTime != 0 {
+                has_desktop = true;
+                desktop_changed = true;
+            }
+            if tick <= 0 || !has_desktop {
                 continue;
             }
-            let time = crate::qpc_ticks_to_100ns(tick);
+            let Some(pts) = publisher.accept(crate::qpc_ticks_to_100ns(tick)) else {
+                continue;
+            };
             let source = match resource.and_then(|r| r.cast::<ID3D11Texture2D>().ok()) {
                 Some(t) => t,
                 None => continue,
             };
-            if info.LastPresentTime != 0 {
-                let started = std::time::Instant::now();
-                shared.n_frame_diff.fetch_add(1, Ordering::Relaxed);
-                match unsafe {
-                    crate::capture::read_texture(
-                        &device,
-                        &context,
-                        &source,
-                        &mut staging,
-                        &mut desktop,
-                    )
-                } {
-                    Ok(size) => desktop_size = size,
-                    Err(_) => {
-                        recreate = true;
-                        break;
-                    }
-                }
-                shared.t_capture_ns.fetch_add(started.elapsed().as_nanos() as i64, Ordering::Relaxed);
-            }
-            drop(_frame);
-            if desktop.is_empty() {
+            let draw_cursor =
+                cursor && pointer.visible && !pointer.failed && pointer.shape.is_some();
+            let mut desc = D3D11_TEXTURE2D_DESC::default();
+            unsafe { source.GetDesc(&mut desc) };
+            let (w, h) = (desc.Width, desc.Height);
+            if shared_device && !draw_cursor && publisher.submit_gpu(&source, w, h, pts) {
+                // Submit the copy while the duplication frame still owns the source.
                 continue;
             }
-            let (w, h) = desktop_size;
-            let copied = std::time::Instant::now();
+
+            let started = std::time::Instant::now();
             let mut bgra = shared.take_bgra();
-            bgra.extend_from_slice(&desktop);
-            if cursor {
-                pointer.draw(&mut bgra, w, h);
+            let pixels = if draw_cursor { &mut desktop } else { &mut bgra };
+            // A paced-out desktop update must invalidate the cursor-free CPU cache too.
+            if !draw_cursor || desktop_changed || desktop_size != (w, h) {
+                shared.n_frame_diff.fetch_add(1, Ordering::Relaxed);
+                let read = unsafe {
+                    crate::capture::read_texture(&device, &context, &source, &mut staging, pixels)
+                };
+                if read.is_err() {
+                    shared.recycle_bgra(bgra);
+                    recreate = true;
+                    break;
+                }
+                if draw_cursor {
+                    desktop_size = (w, h);
+                    desktop_changed = false;
+                }
             }
-            shared.t_copy_ns.fetch_add(copied.elapsed().as_nanos() as i64, Ordering::Relaxed);
+            drop(source);
+            drop(frame);
+            shared.t_capture_ns.fetch_add(started.elapsed().as_nanos() as i64, Ordering::Relaxed);
+            if draw_cursor {
+                let copied = std::time::Instant::now();
+                bgra.extend_from_slice(&desktop);
+                pointer.draw(&mut bgra, w, h);
+                shared.t_copy_ns.fetch_add(copied.elapsed().as_nanos() as i64, Ordering::Relaxed);
+            }
             if shared.gpu_mode.load(Ordering::Acquire) == 1 {
                 let uploaded = std::time::Instant::now();
                 let result = unsafe {
-                    (|| -> windows::core::Result<()> {
+                    (|| -> windows::core::Result<bool> {
                         let stale = composition.as_ref().is_none_or(|texture| {
                             let mut desc = D3D11_TEXTURE2D_DESC::default();
                             texture.GetDesc(&mut desc);
                             desc.Width != w || desc.Height != h
                         });
                         if stale {
-                            let mut desc = D3D11_TEXTURE2D_DESC::default();
-                            source.GetDesc(&mut desc);
-                            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE.0 as u32;
+                            desc.BindFlags = 0;
                             desc.Usage = D3D11_USAGE_DEFAULT;
                             desc.CPUAccessFlags = 0;
                             desc.MiscFlags = 0;
@@ -243,36 +271,24 @@ fn run(
                         }
                         let texture = composition.as_ref().unwrap();
                         encode_context.UpdateSubresource(texture, 0, None, bgra.as_ptr() as _, w * 4, 0);
-                        publisher.publish(texture, time, None)
+                        Ok(publisher.submit_gpu(texture, w, h, pts))
                     })()
                 };
                 shared.t_buf_ns.fetch_add(uploaded.elapsed().as_nanos() as i64, Ordering::Relaxed);
-                shared.recycle_bgra(bgra);
-                if result.is_err() {
-                    recreate = true;
-                    break;
+                match result {
+                    Ok(true) => {
+                        shared.recycle_bgra(bgra);
+                        continue;
+                    }
+                    Ok(false) => {}
+                    Err(_) => {
+                        shared.recycle_bgra(bgra);
+                        recreate = true;
+                        break;
+                    }
                 }
-                continue;
             }
-            if time < shared.start_qpc.load(Ordering::Acquire)
-                || !pacer.accept(time, shared.fps.load(Ordering::Relaxed).max(0) as u32)
-            {
-                shared.n_capture_drop.fetch_add(1, Ordering::Relaxed);
-                shared.recycle_bgra(bgra);
-                continue;
-            }
-            shared.n_capture.fetch_add(1, Ordering::Relaxed);
-            let Some(pts) = shared.capture_time(time) else {
-                shared.recycle_bgra(bgra);
-                continue;
-            };
-            shared.last_capture_pts.store(pts, Ordering::Release);
-            shared.push_frame(RawFrame {
-                bgra,
-                w,
-                h,
-                pts100ns: pts,
-            });
+            publisher.submit_bgra(bgra, w, h, pts);
         }
         if !recreate {
             return;
